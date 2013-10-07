@@ -32,7 +32,6 @@ def mtplv(x,params):
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
-        chandim = 0
         nchans = x.shape[0]
         print 'The data is of format (channels x trials x time)'
     elif(len(x.shape) == 2):
@@ -43,8 +42,6 @@ def mtplv(x,params):
     else:
         print 'Sorry! The data should be a 2 or 3 dimensional array!'
         
-    
-
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
@@ -53,7 +50,7 @@ def mtplv(x,params):
     # Make space for the PLV result
     Fs = params['Fs']
     nfft = int(2**ceil(sci.log2(x.shape[timedim])))
-    f = np.arange(0,nfft)*Fs/nfft
+    f = np.arange(0.0,nfft,1.0)*Fs/nfft
     plvtap = np.zeros((ntaps,nchans,nfft))
     
     
@@ -73,6 +70,68 @@ def mtplv(x,params):
     f = f[ind]
     return (plvtap,f)
 
-
+def mtspec(x,params):
+    """Multitaper Spectrum and SNR estimate
+    
+    Parameters
+    ----------
+    x - Input data numpy array (channel x trial x time) or (trials x time)
+    params - Dictionary of parameter settings
+      params['Fs'] - sampling rate
+      params['tapers'] - [TW, Number of tapers]
+      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      
+    Returns
+    -------
+    Tuple (S, N ,f):
+        S - Multitapered spectrum (channel x frequency)
+        N - Noise floor estimate
+        f - Frequency vector matching plvtap
+    """
+    
+    if(len(x.shape) == 3):
+        timedim = 2
+        trialdim = 1
+        ntrials = x.shape[trialdim]
+        nchans = x.shape[0]
+        print 'The data is of format (channels x trials x time)'
+    elif(len(x.shape) == 2):
+        timedim = 1
+        trialdim = 0
+        ntrials = x.shape[trialdim]
+        nchans = 1
+        print 'The data is of format (trials x time) i.e. single channel'
+    else:
+        print 'Sorry! The data should be a 2 or 3 dimensional array!'
+        
+    # Calculate the tapers
+    ntaps = params['tapers'][1]
+    TW = params['tapers'][0]
+    w,conc = alg.dpss_windows(x.shape[timedim],TW,ntaps)
+    
+    # Make space for the PLV result
+    Fs = params['Fs']
+    nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    f = np.arange(0.0,nfft,1.0)*Fs/nfft
+    S = np.zeros((ntaps,nchans,nfft))
+    N = np.zeros((ntaps,nchans,nfft))
+    
+    
+    for k,tap in enumerate(w):
+        print 'Doing Taper #',k
+        xw = sci.fft(tap*x,n = nfft, axis = timedim)
+        randph = sci.rand(nchans,ntrials,nfft)*2*sci.pi
+        S[k,:,:] = abs(xw.mean(axis = trialdim))
+        N[k,:,:] = abs((xw*sci.exp(1j*randph)).mean(axis = trialdim))
+            
+    # Average over tapers and squeeze to pretty shapes        
+    S = S.mean(axis = 0).squeeze() 
+    N = N.mean(axis = 0).squeeze()
+    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
+    S = S[:,ind]
+    N = N[:,ind]
+    f = f[ind]
+    return (S,N,f)
       
     
