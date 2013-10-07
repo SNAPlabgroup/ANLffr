@@ -21,6 +21,12 @@ def mtplv(x,params):
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
       params['pad'] - 1 or 0, to pad to the next power of 2 or not
       params['itc'] - 1 for ITC, 0 for PLV
+      
+    Returns
+    -------
+    Tuple (plvtap, f):
+        plvtap - Multitapered phase-locking estimate (channel x frequency)
+        f - Frequency vector matching plvtap
     """
     
     if(len(x.shape) == 3):
