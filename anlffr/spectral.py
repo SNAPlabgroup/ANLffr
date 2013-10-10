@@ -8,6 +8,7 @@ import nitime.algorithms as alg
 import numpy as np
 from math import ceil
 import scipy as sci
+from scipy import linalg
 
 def mtplv(x,params):
     """Multitaper Phase-Locking Value
@@ -87,7 +88,7 @@ def mtspec(x,params):
     Tuple (S, N ,f):
         S - Multitapered spectrum (channel x frequency)
         N - Noise floor estimate
-        f - Frequency vector matching plvtap
+        f - Frequency vector matching S and N
     """
     
     if(len(x.shape) == 3):
@@ -110,7 +111,7 @@ def mtspec(x,params):
     TW = params['tapers'][0]
     w,conc = alg.dpss_windows(x.shape[timedim],TW,ntaps)
     
-    # Make space for the PLV result
+    # Make space for the results
     Fs = params['Fs']
     nfft = int(2**ceil(sci.log2(x.shape[timedim])))
     f = np.arange(0.0,nfft,1.0)*Fs/nfft
@@ -134,4 +135,60 @@ def mtspec(x,params):
     f = f[ind]
     return (S,N,f)
       
+def mtcpca(x,params):
+    """Multitaper complex PCA and PLV
     
+    Parameters
+    ----------
+    x - Input data numpy array (channel x trial x time)
+    params - Dictionary of parameter settings
+      params['Fs'] - sampling rate
+      params['tapers'] - [TW, Number of tapers]
+      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      params['itc'] - 1 for ITC, 0 for PLV
+      
+    Returns
+    -------
+    Tuple (plv, f):
+        plv - Multitapered PLV estimate using cPCA
+        f - Frequency vector matching plv, S and N
+    """
+    
+    if(len(x.shape) == 3):
+        timedim = 2
+        trialdim = 1
+        ntrials = x.shape[trialdim]
+        nchans = x.shape[0]
+        print 'The data is of format (channels x trials x time)'
+        print nchans, 'Channels,', ntrials, 'Trials'
+    else:
+        print 'Sorry! The data should be a 3 dimensional array!'
+        
+    # Calculate the tapers
+    ntaps = params['tapers'][1]
+    TW = params['tapers'][0]
+    w,conc = alg.dpss_windows(x.shape[timedim],TW,ntaps)
+    
+    # Make space for the PLV result
+    Fs = params['Fs']
+    nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    f = np.arange(0.0,nfft,1.0)*Fs/nfft
+    plv = np.zeros((ntaps,nfft))
+    
+    for k,tap in enumerate(w):
+        print 'Doing Taper #', k
+        xw = sci.fft(tap*x,n = nfft, axis = timedim)
+        C = (xw.mean(axis = trialdim)/(abs(xw).mean(axis = trialdim))).squeeze()
+        for fi in np.arange(0,nfft):
+            Csd = np.outer(C[:,fi],C[:,fi].conj())
+            vals = linalg.eigh(Csd,eigvals_only = True)
+            plv[k,fi] = vals[-1]/nchans
+                        
+            
+    # Average over tapers and squeeze to pretty shapes        
+    plv = (plv.mean(axis = 0)).squeeze()
+    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
+    plv = plv[ind]
+    f = f[ind]
+    return (plv,f)
