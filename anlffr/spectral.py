@@ -152,7 +152,7 @@ def mtcpca(x,params):
     -------
     Tuple (plv, f):
         plv - Multitapered PLV estimate using cPCA
-        f - Frequency vector matching plv, S and N
+        f - Frequency vector matching plv
     """
     
     if(len(x.shape) == 3):
