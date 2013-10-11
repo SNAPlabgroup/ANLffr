@@ -13,7 +13,7 @@ setup(
     author='Hari Bharadwaj',
     author_email='hari@nmr.mgh.harvard.edu',
     packages=['anlffr','anlffr.helper'],
-    package_data={'anlffr':['sysfiles/*']},
+    package_data={'anlffr.helper':['sysfiles/*']},
     url='http://github.com/haribharadwaj/assr-tools/',
     license='BSD (3 Clause)',
     description='Auditory Neuroscience Lab (ANL) at Boston University',
