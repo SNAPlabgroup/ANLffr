@@ -12,7 +12,7 @@ From the Auditory Neuroscience Lab at Boston University (http://www.cns.bu.edu/~
 The project homepage is http://github.com/haribharadwaj/ANLffr. Packages numpy, scipy, nitime are required for the code in the spectral.py module to work. The mne-python package and commandline tools are required for the modules in the anlffr.helper package. See the examples directory for a sample script to get started!
 
 Licensing
-^^^^^^^^^
+---------
 
 ANLffr is **BSD-licenced** (3 clause):
 
@@ -32,7 +32,7 @@ ANLffr is **BSD-licenced** (3 clause):
       this list of conditions and the following disclaimer in the documentation
       and/or other materials provided with the distribution.
 
-    * Neither the names of MNE-Python authors nor the names of any
+    * Neither the names of ANLffr authors nor the names of any
       contributors may be used to endorse or promote products derived from
       this software without specific prior written permission.
 
