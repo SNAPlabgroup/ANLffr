@@ -32,11 +32,11 @@ def importbdf(edfname, fiffname, evename, refchans,
     # What happens if they don' specify a hpts/alias file: Use default
     if(hptsname == None):
         anlffr_root = os.path.dirname(sys.modules['anlffr'].__file__)
-        hptsname = os.path.join(anlffr_root,'sysfiles/biosemi32.hpts')
+        hptsname = os.path.join(anlffr_root,'helper/sysfiles/biosemi32.hpts')
         
     if(aliasname == None):
         anlffr_root = os.path.dirname(sys.modules['anlffr'].__file__)
-        aliasname = os.path.join(anlffr_root,'sysfiles/biosemi32alias.txt')
+        aliasname = os.path.join(anlffr_root,'helper/sysfiles/biosemi32alias.txt')
         
     call(["mne_edf2fiff","--edf",edfname,"--fif",fiffname,"--hpts",hptsname])
     call(["mne_rename_channels","--fif",fiffname,"--alias",aliasname])
