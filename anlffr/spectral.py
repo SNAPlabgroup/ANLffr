@@ -241,7 +241,7 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
         vplv = 0
 
     for drawnum in np.arange(0,nDraws):
-        inds = np.ceil((np.random.rand(nPerDraw))*ntrials)
+        inds = np.random.randint(0,ntrials,nPerDraw)
         
         print 'Doing Draw #',drawnum+1, '/', nDraws
         
@@ -278,13 +278,13 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
             
         
     if(func == 'spec'):
-        vS = (vS - S**2)/(nDraws - 1)
-        vN = (vN - N**2)/(nDraws - 1)
+        vS = (vS - (S**2)/nDraws)/(nDraws - 1)
+        vN = (vN - (N**2)/nDraws)/(nDraws - 1)
         S = S/nDraws
         N = N/nDraws
         return (S,N,vS,vN,f)
     else:
-        vplv = (vplv - plv**2)/(nDraws - 1)
+        vplv = (vplv - (plv**2)/nDraws)/(nDraws - 1)
         plv = plv/nDraws
         return (plv,vplv,f)
         
