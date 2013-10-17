@@ -264,12 +264,12 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
             vplv = vplv + tempplv**2
         elif(func == 'itc'):
             params['itc'] = 1
-            (plv,f) = mtplv(xdraw,params)
+            (tempplv,f) = mtplv(xdraw,params)
             plv = plv + tempplv
             vplv = vplv + tempplv**2
         elif(func == 'plv'):
             params['plv'] = 0
-            (plv,f) = mtplv(xdraw,params)
+            (tempplv,f) = mtplv(xdraw,params)
             plv = plv + tempplv
             vplv = vplv + tempplv**2
         else:
