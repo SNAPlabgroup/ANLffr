@@ -288,7 +288,104 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
         plv = plv/nDraws
         return (plv,vplv,f)
         
-                
+def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
+    """Run spectral functions with bootstrapping over trials 
+    This also returns individual draw results, unlike bootfunc()
+    
+    Parameters
+    ----------
+    x - Input data (channel x trials x time) or (trials x time)
+    nPerDraw - Number of trials for each draw
+    nDraws - Number of draws
+    params - Dictionary of parameters to use when calling chosen function
+    func - 'cpca' or 'plv' or 'itc' or 'spec', i.e. which to call?
+    
+    Returns
+    -------
+    (plv, f) for everything except when func == 'spec'
+    (S, N, f) when func == 'spec'
+    plv, S and N arrays will have an extra dimension spanning the draws.
+    
+    See help for mtcpca(), mtplv() and mtspec() for more details.
+    
+    Notes
+    -----
+    
+    This is not a particularly parallelized piece of code and hence slow.
+    It is provided just so the functionality is there. Mostly untested.
+    
+    """
+    
+    if(len(x.shape) == 3):
+        trialdim = 1
+        ntrials = x.shape[trialdim]
+        nchans = x.shape[0]
+        print 'The data is of format (channels x trials x time)'
+    elif(len(x.shape) == 2):
+        trialdim = 0
+        ntrials = x.shape[trialdim]
+        nchans = 1
+        print 'The data is of format (trials x time) i.e. single channel'
+    else:
+        print 'Sorry! The data should be a 2 or 3 dimensional array!'
+        
+    
+    # Running 1 draw to get the right sizes
+    if(func == 'spec'):
+        (S,N,f) = mtspec(x,params)       
+        S = np.zeros(S.shape + (nDraws,))
+        N = np.zeros(N.shape + (nDraws,))
+        
+    elif((func == 'plv') or (func == 'itc')):
+        (plv,f) = mtplv(x,params)
+        plv =  np.zeros(plv.shape + (nDraws,))
+        
+    elif(func == 'cpca'):
+        (plv,f) = mtcpca(x, params)
+        plv =  np.zeros(plv.shape + (nDraws,))
+
+    for drawnum in np.arange(0,nDraws):
+        inds = np.random.randint(0,ntrials,nPerDraw)
+        
+        print 'Doing Draw #',drawnum+1, '/', nDraws
+        
+        if(nchans > 1):
+            xdraw = x[:,inds,:]
+        elif(nchans == 0):
+            xdraw = x[inds,:]
+        else:
+            print 'Data not in the right formmat!'
+               
+        if(func == 'spec'):
+            (S[:,:,drawnum],N[:,:,drawnum],f) = mtspec(xdraw,params)
+           
+        elif(func == 'cpca'):
+            (plv[:,drawnum],f)  = mtcpca(xdraw,params)
+           
+        elif(func == 'itc'):
+            params['itc'] = 1
+            if(nchans > 1):
+                (plv[:,:,drawnum],f) = mtplv(xdraw,params)
+            else:
+                (plv[:,drawnum],f) = mtplv(x,params)
+            
+        elif(func == 'plv'):
+            params['plv'] = 0
+            if(nchans > 1):
+                (plv[:,:,drawnum],f) = mtplv(xdraw,params)
+            else:
+                (plv[:,drawnum],f) = mtplv(x,params)
+            
+        else:
+            print 'Unknown func argument!'
+            return
+            
+        
+    if(func == 'spec'):
+        
+        return (S,N,f)
+    else:
+        return (plv,f)                
             
         
         
