@@ -122,9 +122,12 @@ def mtspec(x,params):
     for k,tap in enumerate(w):
         print 'Doing Taper #',k
         xw = sci.fft(tap*x,n = nfft, axis = timedim)
-        randph = sci.rand(nchans,ntrials,nfft)*2*sci.pi
+        # randph = sci.rand(nchans,ntrials,nfft)*2*sci.pi
+        randsign = np.ones((nchans,ntrials,nfft))
+        randsign[:,np.arange(0,ntrials,2),:] = -1
         S[k,:,:] = abs(xw.mean(axis = trialdim))
-        N[k,:,:] = abs((xw*sci.exp(1j*randph)).mean(axis = trialdim))
+        # N[k,:,:] = abs((xw*sci.exp(1j*randph)).mean(axis = trialdim))
+        N[k,:,:] = abs((xw*randsign).mean(axis = trialdim))
             
     # Average over tapers and squeeze to pretty shapes        
     S = S.mean(axis = 0).squeeze() 
