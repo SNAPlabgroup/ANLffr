@@ -205,7 +205,7 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
     nPerDraw - Number of trials for each draw
     nDraws - Number of draws
     params - Dictionary of parameters to use when calling chosen function
-    func - 'cpca' or 'plv' or 'itc' or 'spec', i.e. which to call?
+    func - 'cpca' or 'plv' or 'itc' or 'spec' or 'ppc', i.e. which to call?
     
     Returns
     -------
@@ -273,6 +273,11 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
         elif(func == 'plv'):
             params['plv'] = 0
             (tempplv,f) = mtplv(xdraw,params)
+            plv = plv + tempplv
+            vplv = vplv + tempplv**2
+        elif(func == 'ppc'):
+            params['itc'] = 0
+            (tempplv,f) = mtppc(xdraw,params)
             plv = plv + tempplv
             vplv = vplv + tempplv**2
         else:
@@ -402,6 +407,7 @@ def mtppc(x,params):
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
       params['pad'] - 1 or 0, to pad to the next power of 2 or not
       params['ppcpairs'] - Number of pairs for PPC analysis
+      params['itc'] - If True, normalize after mean like ITC instead of PLV
       
     Returns
     -------
@@ -445,13 +451,28 @@ def mtppc(x,params):
         trial_pairs = np.random.randint(0,ntrials,(npairs,2))
         
         if(nchans == 1):
-            xw_1 = xw[trial_pairs[:,0],:]/abs(xw[trial_pairs[:,0],:])
-            xw_2 = xw[trial_pairs[:,1],:]/abs(xw[trial_pairs[:,1],:])
-            ppc[k,:,:] = abs((xw_1*xw_2.conj()).mean(axis = trialdim))
+            if(not params['itc']):
+                xw_1 = xw[trial_pairs[:,0],:]/abs(xw[trial_pairs[:,0],:])
+                xw_2 = xw[trial_pairs[:,1],:]/abs(xw[trial_pairs[:,1],:])
+                ppc[k,:,:] = np.real((xw_1*xw_2.conj()).mean(axis = trialdim))
+            else:
+                xw_1 = xw[trial_pairs[:,0]]
+                xw_2 = xw[trial_pairs[:,1]]
+                ppc_unnorm = np.real((xw_1*xw_2.conj()).mean(axis = trialdim))
+                ppc[k,:,:] = (ppc_unnorm/
+                  (abs(xw_1).mean(trialdim)*abs(xw_2).mean(trialdim)))
+                
         else:
-            xw_1 = xw[:,trial_pairs[:,0],:]/abs(xw[:,trial_pairs[:,0],:])
-            xw_2 = xw[:,trial_pairs[:,1],:]/abs(xw[:,trial_pairs[:,1],:])
-            ppc[k,:,:] = abs((xw_1*xw_2.conj()).mean(axis = trialdim))
+            if(not params['itc']):
+                xw_1 = xw[:,trial_pairs[:,0],:]/abs(xw[:,trial_pairs[:,0],:])
+                xw_2 = xw[:,trial_pairs[:,1],:]/abs(xw[:,trial_pairs[:,1],:])
+                ppc[k,:,:] = np.real((xw_1*xw_2.conj()).mean(axis = trialdim))
+            else:
+                xw_1 = xw[:,trial_pairs[:,0],:]
+                xw_2 = xw[:,trial_pairs[:,1],:]
+                ppc_unnorm = np.real((xw_1*xw_2.conj()).mean(axis = trialdim))
+                ppc[k,:,:] = (ppc_unnorm/
+                  (abs(xw_1).mean(trialdim)*abs(xw_2).mean(trialdim)))
               
     ppc = ppc.mean(axis = 0).squeeze()
     ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
