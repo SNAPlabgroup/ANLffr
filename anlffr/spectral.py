@@ -390,5 +390,73 @@ def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
     else:
         return (plv,f)                
             
+def mtppc(x,params):
+    """Multitaper Pairwise Phase Consisttency
+    
+    Parameters
+    ----------
+    x - Input data numpy array (channel x trial x time) or (trials x time)
+    params - Dictionary of parameter settings
+      params['Fs'] - sampling rate
+      params['tapers'] - [TW, Number of tapers]
+      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      params['ppcpairs'] - Number of pairs for PPC analysis
+      
+    Returns
+    -------
+    Tuple (ppc, f):
+        ppc - Multitapered phase-locking estimate (channel x frequency)
+        f - Frequency vector matching ppc
+    """
+    
+    if(len(x.shape) == 3):
+        timedim = 2
+        trialdim = 1
+        ntrials = x.shape[trialdim]
+        nchans = x.shape[0]
+        print 'The data is of format (channels x trials x time)'
+    elif(len(x.shape) == 2):
+        timedim = 1
+        trialdim = 0
+        ntrials = x.shape[trialdim]
+        nchans = 1
+        print 'The data is of format (trials x time) i.e. single channel'
+    else:
+        print 'Sorry! The data should be a 2 or 3 dimensional array!'
+        
+    # Calculate the tapers
+    ntaps = params['tapers'][1]
+    TW = params['tapers'][0]
+    w,conc = alg.dpss_windows(x.shape[timedim],TW,ntaps)
+    
+    # Make space for the PLV result
+    Fs = params['Fs']
+    nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    f = np.arange(0.0,nfft,1.0)*Fs/nfft
+    ppc = np.zeros((ntaps,nchans,nfft))
+    
+    
+    for k,tap in enumerate(w):
+        print 'Doing Taper #',k
+        xw = sci.fft(tap*x,n = nfft, axis = timedim)
+        
+        npairs = params['ppcpairs']
+        trial_pairs = np.random.randint(0,ntrials,(npairs,2))
+        
+        if(nchans == 1):
+            xw_1 = xw[trial_pairs[:,0],:]/abs(xw[trial_pairs[:,0],:])
+            xw_2 = xw[trial_pairs[:,1],:]/abs(xw[trial_pairs[:,1],:])
+            ppc[k,:,:] = abs((xw_1*xw_2.conj()).mean(axis = trialdim))
+        else:
+            xw_1 = xw[:,trial_pairs[:,0],:]/abs(xw[:,trial_pairs[:,0],:])
+            xw_2 = xw[:,trial_pairs[:,1],:]/abs(xw[:,trial_pairs[:,1],:])
+            ppc[k,:,:] = abs((xw_1*xw_2.conj()).mean(axis = trialdim))
+              
+    ppc = ppc.mean(axis = 0).squeeze()
+    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
+    ppc = ppc[:,ind]
+    f = f[ind]
+    return (ppc,f)
         
         
