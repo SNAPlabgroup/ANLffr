@@ -276,7 +276,6 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
             plv = plv + tempplv
             vplv = vplv + tempplv**2
         elif(func == 'ppc'):
-            params['itc'] = 0
             (tempplv,f) = mtppc(xdraw,params)
             plv = plv + tempplv
             vplv = vplv + tempplv**2
