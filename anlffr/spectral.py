@@ -127,7 +127,7 @@ def mtspec(x,params):
         randsign[:,np.arange(0,ntrials,2),:] = -1
         S[k,:,:] = abs(xw.mean(axis = trialdim))
         # N[k,:,:] = abs((xw*sci.exp(1j*randph)).mean(axis = trialdim))
-        N[k,:,:] = abs((xw*randsign).mean(axis = trialdim))
+        N[k,:,:] = abs((xw*(randsign.squeeze())).mean(axis = trialdim))
             
     # Average over tapers and squeeze to pretty shapes        
     S = S.mean(axis = 0).squeeze() 
@@ -305,11 +305,11 @@ def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
     nPerDraw - Number of trials for each draw
     nDraws - Number of draws
     params - Dictionary of parameters to use when calling chosen function
-    func - 'cpca' or 'plv' or 'itc' or 'spec', i.e. which to call?
+    func - 'cpca' or 'plv' or 'itc' or 'spec' or 'ppc', i.e. which to call?
     
     Returns
     -------
-    (plv, f) for everything except when func == 'spec'
+    (plv, f) for everything except when func == 'spec' (including 'ppc')
     (S, N, f) when func == 'spec'
     plv, S and N arrays will have an extra dimension spanning the draws.
     
@@ -343,7 +343,7 @@ def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
         S = np.zeros(S.shape + (nDraws,))
         N = np.zeros(N.shape + (nDraws,))
         
-    elif((func == 'plv') or (func == 'itc')):
+    elif((func == 'plv') or (func == 'itc') or (func == 'ppc')):
         (plv,f) = mtplv(x,params)
         plv =  np.zeros(plv.shape + (nDraws,))
         
@@ -358,13 +358,16 @@ def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
         
         if(nchans > 1):
             xdraw = x[:,inds,:]
-        elif(nchans == 0):
+        elif(nchans == 1):
             xdraw = x[inds,:]
         else:
             print 'Data not in the right formmat!'
                
         if(func == 'spec'):
-            (S[:,:,drawnum],N[:,:,drawnum],f) = mtspec(xdraw,params)
+            if(nchans > 1):
+                (S[:,:,drawnum],N[:,:,drawnum],f) = mtspec(xdraw,params)
+            else:
+                (S[:,drawnum],N[:,drawnum],f) = mtspec(xdraw,params)
            
         elif(func == 'cpca'):
             (plv[:,drawnum],f)  = mtcpca(xdraw,params)
@@ -382,6 +385,12 @@ def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
                 (plv[:,:,drawnum],f) = mtplv(xdraw,params)
             else:
                 (plv[:,drawnum],f) = mtplv(x,params)
+                
+        elif(func == 'ppc'):
+            if(nchans > 1):
+                (plv[:,:,drawnum],f) = mtppc(xdraw,params)
+            else:
+                (plv[:,drawnum],f) = mtppc(x,params)
             
         else:
             print 'Unknown func argument!'
