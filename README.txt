@@ -6,6 +6,8 @@ From the Auditory Neuroscience Lab at Boston University (http://www.cns.bu.edu/~
     #!/usr/bin/env python
 
     from anlffr import spectral
+
+    # If using a Biosemi 32 channel EEG system
     from anlffr.helper import biosemi2mne
 
 

@@ -488,4 +488,61 @@ def mtppc(x,params):
     f = f[ind]
     return (ppc,f)
         
+def mtspecraw(x,params):
+    """Multitaper Spectrum (of raw signal) 
+    
+    Parameters
+    ----------
+    x - Input data numpy array (channel x trial x time) or (trials x time)
+    params - Dictionary of parameter settings
+      params['Fs'] - sampling rate
+      params['tapers'] - [TW, Number of tapers]
+      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      
+    Returns
+    -------
+    Tuple (Sraw, f):
+        Sraw - Multitapered spectrum (channel x frequency)
+        f - Frequency vector matching Sraw
+    """
+    
+    if(len(x.shape) == 3):
+        timedim = 2
+        trialdim = 1
+        nchans = x.shape[0]
+        print 'The data is of format (channels x trials x time)'
+    elif(len(x.shape) == 2):
+        timedim = 1
+        trialdim = 0
+        nchans = 1
+        print 'The data is of format (trials x time) i.e. single channel'
+    else:
+        print 'Sorry! The data should be a 2 or 3 dimensional array!'
         
+    # Calculate the tapers
+    ntaps = params['tapers'][1]
+    TW = params['tapers'][0]
+    w,conc = alg.dpss_windows(x.shape[timedim],TW,ntaps)
+    
+    # Make space for the results
+    Fs = params['Fs']
+    nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    f = np.arange(0.0,nfft,1.0)*Fs/nfft
+    Sraw = np.zeros((ntaps,nchans,nfft))
+    
+    
+    for k,tap in enumerate(w):
+        print 'Doing Taper #',k
+        xw = sci.fft(tap*x,n = nfft, axis = timedim)
+        Sraw[k,:,:] = (abs(xw)**2).mean(axis = trialdim)
+         
+    # Average over tapers and squeeze to pretty shapes        
+    Sraw = Sraw.mean(axis = 0).squeeze() 
+    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
+    Sraw = Sraw[:,ind]
+    f = f[ind]
+    return (Sraw,f)
+    
+    
+    
