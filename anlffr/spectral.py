@@ -205,11 +205,11 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
     nPerDraw - Number of trials for each draw
     nDraws - Number of draws
     params - Dictionary of parameters to use when calling chosen function
-    func - 'cpca' or 'plv' or 'itc' or 'spec' or 'ppc', i.e. which to call?
+    func - 'cpca' or 'plv' or 'itc' or 'spec' or 'ppc' or 'pspec'
     
     Returns
     -------
-    (plv, vplv, f) for everything except when func == 'spec'
+    (mu_func, v_func, f) for everything except when func == 'spec'
     (S, N, vS, vN, f) when func == 'spec'
     A 'v' prefix denotes variance estimate
     
@@ -240,8 +240,8 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
         vS = 0
         vN = 0
     else:
-        plv = 0
-        vplv = 0
+        mu_func = 0
+        v_func = 0
 
     for drawnum in np.arange(0,nDraws):
         inds = np.random.randint(0,ntrials,nPerDraw)
@@ -262,23 +262,27 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
             vS = vS + tempS**2
             vN = vN + tempN**2
         elif(func == 'cpca'):
-            (tempplv,f)  = mtcpca(xdraw,params)
-            plv = plv + tempplv
-            vplv = vplv + tempplv**2
+            (temp_func,f)  = mtcpca(xdraw,params)
+            mu_func = mu_func + temp_func
+            v_func = v_func + temp_func**2
         elif(func == 'itc'):
             params['itc'] = 1
-            (tempplv,f) = mtplv(xdraw,params)
-            plv = plv + tempplv
-            vplv = vplv + tempplv**2
+            (temp_func,f) = mtplv(xdraw,params)
+            mu_func = mu_func + temp_func
+            v_func = v_func + temp_func**2
         elif(func == 'plv'):
             params['plv'] = 0
-            (tempplv,f) = mtplv(xdraw,params)
-            plv = plv + tempplv
-            vplv = vplv + tempplv**2
+            (temp_func,f) = mtplv(xdraw,params)
+            mu_func = mu_func + temp_func
+            v_func = v_func + temp_func**2
         elif(func == 'ppc'):
-            (tempplv,f) = mtppc(xdraw,params)
-            plv = plv + tempplv
-            vplv = vplv + tempplv**2
+            (temp_func,f) = mtppc(xdraw,params)
+            mu_func = mu_func + temp_func
+            v_func = v_func + temp_func**2
+        elif(func == 'pspec'):
+            (temp_func,f) = mtpspec(xdraw,params)
+            mu_func = mu_func + temp_func
+            v_func = v_func + temp_func**2
         else:
             print 'Unknown func argument!'
             return
@@ -291,9 +295,9 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
         N = N/nDraws
         return (S,N,vS,vN,f)
     else:
-        vplv = (vplv - (plv**2)/nDraws)/(nDraws - 1)
-        plv = plv/nDraws
-        return (plv,vplv,f)
+        v_func = (v_func - (mu_func**2)/nDraws)/(nDraws - 1)
+        mu_func = mu_func/nDraws
+        return (mu_func,v_func,f)
         
 def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
     """Run spectral functions with bootstrapping over trials 
@@ -414,7 +418,7 @@ def mtppc(x,params):
       params['tapers'] - [TW, Number of tapers]
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
       params['pad'] - 1 or 0, to pad to the next power of 2 or not
-      params['ppcpairs'] - Number of pairs for PPC analysis
+      params['Npairs'] - Number of pairs for PPC analysis
       params['itc'] - If True, normalize after mean like ITC instead of PLV
       
     Returns
@@ -455,7 +459,7 @@ def mtppc(x,params):
         print 'Doing Taper #',k
         xw = sci.fft(tap*x,n = nfft, axis = timedim)
         
-        npairs = params['ppcpairs']
+        npairs = params['Npairs']
         trial_pairs = np.random.randint(0,ntrials,(npairs,2))
         
         if(nchans == 1):
@@ -544,5 +548,71 @@ def mtspecraw(x,params):
     f = f[ind]
     return (Sraw,f)
     
+def mtpspec(x,params):
+    """Multitaper Pairwise Power Spectral estimate
     
+    Parameters
+    ----------
+    x - Input data numpy array (channel x trial x time) or (trials x time)
+    params - Dictionary of parameter settings
+      params['Fs'] - sampling rate
+      params['tapers'] - [TW, Number of tapers]
+      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      params['Npairs'] - Number of pairs for pairwise analysis     
+      
+    Returns
+    -------
+    Tuple (pspec, f):
+        pspec - Multitapered phase-locking estimate (channel x frequency)
+        f - Frequency vector matching ppc
+    """
     
+    if(len(x.shape) == 3):
+        timedim = 2
+        trialdim = 1
+        ntrials = x.shape[trialdim]
+        nchans = x.shape[0]
+        print 'The data is of format (channels x trials x time)'
+    elif(len(x.shape) == 2):
+        timedim = 1
+        trialdim = 0
+        ntrials = x.shape[trialdim]
+        nchans = 1
+        print 'The data is of format (trials x time) i.e. single channel'
+    else:
+        print 'Sorry! The data should be a 2 or 3 dimensional array!'
+        
+    # Calculate the tapers
+    ntaps = params['tapers'][1]
+    TW = params['tapers'][0]
+    w,conc = alg.dpss_windows(x.shape[timedim],TW,ntaps)
+    
+    # Make space for the PLV result
+    Fs = params['Fs']
+    nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    f = np.arange(0.0,nfft,1.0)*Fs/nfft
+    pspec = np.zeros((ntaps,nchans,nfft))
+    
+    for ch in np.arange(0,nchans):
+        for k,tap in enumerate(w):
+            print 'Running Channel #', ch, 'taper #', k
+            xw = sci.fft(tap*x,n = nfft, axis = timedim)
+            npairs = params['Npairs']
+            trial_pairs = np.random.randint(0,ntrials,(npairs,2))
+            if(nchans == 1):
+                xw_1 = xw[trial_pairs[:,0]]
+                xw_2 = xw[trial_pairs[:,1]]
+                pspec[k,ch,:] = np.real((xw_1*xw_2.conj()).mean(axis = 0))                         
+            else:
+                xw_1 = xw[ch,trial_pairs[:,0],:]
+                xw_2 = xw[ch,trial_pairs[:,1],:]
+                pspec[k,ch,:] = np.real((xw_1*xw_2.conj()).mean(axis = 0))
+               
+              
+    pspec = pspec.mean(axis = 0).squeeze()
+    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
+    pspec = pspec[:,ind]
+    
+    f = f[ind]
+    return (pspec,f)    
