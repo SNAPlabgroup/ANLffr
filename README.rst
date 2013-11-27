@@ -39,7 +39,7 @@ when install) use::
 Dependencies
 ------------
 
-Packages NumPy >= 1.4, SciPy >= 0.7.2 and nitime >= 0.4 are required for the code in the spectral.py module to work. MNE-python >= 0.7 is required for the modules in the anlffr.helper package (For importing Biosemi BDF files and preprocessing).
+Packages NumPy >= 1.4, SciPy >= 0.7.2 and nitime >= 0.4 are required for the code in the spectral.py module to work. `MNE-python <http://github.com/mne-tools/mne-python>`_ >= 0.7 is required for the modules in the anlffr.helper package (For importing Biosemi BDF files and preprocessing).
 
 Licensing
 ---------
