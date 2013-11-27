@@ -7,12 +7,9 @@ import pylab as pl
 # Adding Files and locations
 fpath = '/home/hari/Documents/MNEforBiosemi/'
 edfname = 'I13_depth_01.bdf'
-fiffname = 'I13_depth_01.fif'
-refchans = [32, 33]
-evename = 'I13_depth_01.eve'
 
 # Load data and read event channel
-(raw,eves) = bs.importbdf(fpath+edfname,fpath+fiffname,fpath+evename,refchans)
+(raw,eves) = bs.importbdf(fpath+edfname)
 
 # Filter the data
 raw.filter(l_freq = 70, h_freq = 1500, picks = np.arange(0,32,1))

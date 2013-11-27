@@ -8,26 +8,18 @@ import pylab as pl
 fpath = '/home/hari/Documents/MNEforBiosemi/'
 
 # List of files stems, each will be appended by run number 
-# Could be different for edf, fiff, eve etc.
 # Use list [] and enumerate over if filenames are weird
 
 namestem = 'I13_depth'
 
-# There are so that the generated files are organized better
-fiffpath = fpath + 'FIF/'
-evepath = fpath + 'EVE/'
-
-refchans = [32, 33]
-
-nruns = 5
+nruns = 5 # Number of files
 
 for k in np.arange(0,nruns):
     # Load data and read event channel
+    # You'll need to modify it based on your file naming convention:
     edfname = fpath + namestem + '_0' + str(k+1) + '.bdf'
-    fiffname = fiffpath + namestem + '_0' + str(k+1) + '.fif'
-    evename = evepath + namestem + '_0' + str(k+1) + '.eve'
 
-    (raw,eves) = bs.importbdf(edfname,fiffname,evename,refchans)
+    (raw,eves) = bs.importbdf(edfname)
 
     # Filter the data
     raw.filter(l_freq = 70, h_freq = 1500, picks = np.arange(0,32,1))
