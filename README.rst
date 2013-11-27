@@ -26,7 +26,7 @@ of the latest code: https://github.com/haribharadwaj/ANLffr/archive/master.zip
 Install anlffr
 --------------
 
-As any Python packages, to install ANLffr, go in the ANLffr source
+As with any Python packages, to install ANLffr, go into the ANLffr source
 code directory and do::
 
     python setup.py install
