@@ -17,5 +17,5 @@ setup(
     url='http://github.com/haribharadwaj/assr-tools/',
     license='BSD (3 Clause)',
     description='Auditory Neuroscience Lab (ANL) at Boston University',
-    long_description=open('README.txt').read(),
+    long_description=open('README.rst').read(),
 )
