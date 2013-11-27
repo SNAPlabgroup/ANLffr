@@ -11,7 +11,7 @@ From the `Auditory Neuroscience Lab at Boston University <http://www.cns.bu.edu/
     from anlffr.helper import biosemi2mne
 
 
-The project homepage is http://github.com/haribharadwaj/ANLffr. See the examples directory for a sample script to get started!
+The project homepage is http://github.com/haribharadwaj/ANLffr. The `examples directory <https://github.com/haribharadwaj/ANLffr/tree/master/examples>`_ contains a sample script that you could modify for your purposed. That would be a good place to get started!
 
 Get the latest code
 -------------------
