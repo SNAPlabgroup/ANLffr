@@ -11,7 +11,7 @@ From the `Auditory Neuroscience Lab at Boston University <http://www.cns.bu.edu/
     from anlffr.helper import biosemi2mne
 
 
-The project homepage is http://github.com/haribharadwaj/ANLffr. The `examples directory <https://github.com/haribharadwaj/ANLffr/tree/master/examples>`_ contains a sample script that you could modify for your purposes. That would be a good place to get started!
+The project homepage is http://github.com/haribharadwaj/ANLffr. The `examples directory <https://github.com/haribharadwaj/ANLffr/tree/master/examples>`_ contains a sample script that you could modify for your purposes. That would be a good place to get started! 
 
 Get the latest code
 -------------------
@@ -22,6 +22,10 @@ To get the latest code using git, simply type::
 
 If you don't have git installed, you can download a zip or tarball
 of the latest code: https://github.com/haribharadwaj/ANLffr/archive/master.zip
+
+If you have pip, you may be able to download and install anlffr in one step using::
+
+    pip install git+https://github.com/haribharadwaj/ANLffr.git --user
 
 Install anlffr
 --------------
@@ -35,6 +39,7 @@ or if you don't have admin access to your python setup (permission denied
 when install) use::
 
     python setup.py install --user
+
 
 Dependencies
 ------------

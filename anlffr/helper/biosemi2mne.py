@@ -56,6 +56,7 @@ def importbdf(bdfname, nchans = 34, refchans = ['EXG1','EXG2'],
     
     Parameters
     ----------
+    
     bdfname - Name of the biosemi .bdf filename with full path
     
     nchans -  Number of EEG channels (including references)
@@ -68,6 +69,7 @@ def importbdf(bdfname, nchans = 34, refchans = ['EXG1','EXG2'],
     Returns
     -------
     raw - MNE raw data object of rereferences and preloaded data
+    
     eves - Event list (3 column array as required by mne.Epochs)
     
     Requires
