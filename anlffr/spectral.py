@@ -47,7 +47,7 @@ def mtplv(x, params, verbose = None):
         logger.info('The data is of format %d trials x time (single channel)',
                     ntrials)
     else:
-        print 'Sorry! The data should be a 2 or 3 dimensional array!'
+        logger.error('Sorry, The data should be a 2 or 3 dimensional array')
         
     # Calculate the tapers
     ntaps = params['tapers'][1]
