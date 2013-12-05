@@ -9,8 +9,10 @@ import numpy as np
 from math import ceil
 import scipy as sci
 from scipy import linalg
+from .utils import logger, verbose
 
-def mtplv(x,params):
+@verbose
+def mtplv(x, params, verbose = None):
     """Multitaper Phase-Locking Value
     
     Parameters
@@ -34,12 +36,16 @@ def mtplv(x,params):
         timedim = 2
         trialdim = 1
         nchans = x.shape[0]
-        print 'The data is of format (channels x trials x time)'
+        ntrials = x.shape[trialdim]
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
     elif(len(x.shape) == 2):
         timedim = 1
         trialdim = 0
+        ntrials = x.shape[trialdim]
         nchans = 1
-        print 'The data is of format (trials x time) i.e. single channel'
+        logger.info('The data is of format %d trials x time (single channel)',
+                    ntrials)
     else:
         print 'Sorry! The data should be a 2 or 3 dimensional array!'
         
@@ -71,7 +77,8 @@ def mtplv(x,params):
     f = f[ind]
     return (plvtap,f)
 
-def mtspec(x,params):
+@verbose
+def mtspec(x,params, verbose = None):
     """Multitaper Spectrum and SNR estimate
     
     Parameters
@@ -96,7 +103,8 @@ def mtspec(x,params):
         trialdim = 1
         ntrials = x.shape[trialdim]
         nchans = x.shape[0]
-        print 'The data is of format (channels x trials x time)'
+        logger.info('The data is of format #d channels x %d trials x time',
+                     nchans, ntrials)
     elif(len(x.shape) == 2):
         timedim = 1
         trialdim = 0
@@ -137,8 +145,9 @@ def mtspec(x,params):
     N = N[:,ind]
     f = f[ind]
     return (S,N,f)
-      
-def mtcpca(x,params):
+
+@verbose      
+def mtcpca(x,params, verbose = None):
     """Multitaper complex PCA and PLV
     
     Parameters
@@ -195,8 +204,9 @@ def mtcpca(x,params):
     plv = plv[ind]
     f = f[ind]
     return (plv,f)
-    
-def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
+
+@verbose    
+def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca', verbose = None):
     """Run spectral functions with bootstrapping over trials
     
     Parameters
@@ -298,8 +308,9 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
         v_func = (v_func - (mu_func**2)/nDraws)/(nDraws - 1)
         mu_func = mu_func/nDraws
         return (mu_func,v_func,f)
-        
-def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
+
+@verbose        
+def indivboot(x,nPerDraw,nDraws, params, func = 'cpca', verbose = None):
     """Run spectral functions with bootstrapping over trials 
     This also returns individual draw results, unlike bootfunc()
     
@@ -406,8 +417,9 @@ def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
         return (S,N,f)
     else:
         return (plv,f)                
-            
-def mtppc(x,params):
+
+@verbose            
+def mtppc(x,params,verbose=None):
     """Multitaper Pairwise Phase Consisttency
     
     Parameters
@@ -491,8 +503,9 @@ def mtppc(x,params):
     ppc = ppc[:,ind]
     f = f[ind]
     return (ppc,f)
-        
-def mtspecraw(x,params):
+
+@verbose        
+def mtspecraw(x,params,verbose = None):
     """Multitaper Spectrum (of raw signal) 
     
     Parameters
@@ -547,8 +560,9 @@ def mtspecraw(x,params):
     Sraw = Sraw[:,ind]
     f = f[ind]
     return (Sraw,f)
-    
-def mtpspec(x,params):
+
+@verbose    
+def mtpspec(x,params,verbose = None):
     """Multitaper Pairwise Power Spectral estimate
     
     Parameters
@@ -573,7 +587,7 @@ def mtpspec(x,params):
         trialdim = 1
         ntrials = x.shape[trialdim]
         nchans = x.shape[0]
-        print 'The data is of format (channels x trials x time)'
+        logger.info('The data is of format (channels x trials x time)')
     elif(len(x.shape) == 2):
         timedim = 1
         trialdim = 0
@@ -596,7 +610,7 @@ def mtpspec(x,params):
     
     for ch in np.arange(0,nchans):
         for k,tap in enumerate(w):
-            print 'Running Channel #', ch, 'taper #', k
+            logger.debug('Running Channel # %d, taper #%d', ch,k)
             xw = sci.fft(tap*x,n = nfft, axis = timedim)
             npairs = params['Npairs']
             trial_pairs = np.random.randint(0,ntrials,(npairs,2))
