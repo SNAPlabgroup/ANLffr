@@ -20,10 +20,10 @@ def mtplv(x, params, verbose = None):
     x - Input data numpy array 
         (channel x trial x time) or (trials x time)
     params - Dictionary of parameter settings
-      params['Fs'] - sampling rate
-      params['tapers'] - [TW, Number of tapers]
-      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
-      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      params['Fs'] - sampling rate,
+      params['tapers'] - [TW, Number of tapers],
+      params['fpass'] - Freqency range of interest, e.g. [5, 1000],
+      params['pad'] - 1 or 0, to pad to the next power of 2 or not,
       params['itc'] - 1 for ITC, 0 for PLV
       
     Returns
@@ -63,7 +63,7 @@ def mtplv(x, params, verbose = None):
     
     
     for k,tap in enumerate(w):
-        print 'Doing Taper #',k
+        logger.info('Doing Taper #%d', k)
         xw = sci.fft(tap*x,n = nfft, axis = timedim)
         
         if(params['itc'] == 0):

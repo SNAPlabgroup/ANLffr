@@ -7,9 +7,11 @@ Created on Thu Dec  5 14:56:34 2013
 import logging
 import inspect
 from functools import wraps
+import sys
 
 logger = logging.getLogger('anlffr') # Used across all code
 logger.propagate = False # What to do in case of multiple imports
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 def verbose(function):
     """Decorator to allow functions to override default log level
@@ -66,12 +68,12 @@ def set_log_level(verbose=None, return_old_level=False):
         INFO, WARNING, ERROR, or CRITICAL. Note that these are for
         convenience and are equivalent to passing in logging.DEBUG, etc.
         For bool, True is the same as 'INFO', False is the same as 'WARNING'.
-        If None, defaults to INFO.
+        If None, defaults to WARNING.
     return_old_level : bool
         If True, return the old verbosity level.
     """
     if verbose is None:
-        verbose = 'INFO'
+        verbose = 'WARNING'
     elif isinstance(verbose, bool):
         if verbose is True:
             verbose = 'INFO'
@@ -85,7 +87,7 @@ def set_log_level(verbose=None, return_old_level=False):
         if not verbose in logging_types:
             raise ValueError('verbose must be of a valid type')
         verbose = logging_types[verbose]
-    logger = logging.getLogger('mne')
+    logger = logging.getLogger('anlffr')
     old_verbose = logger.level
     logger.setLevel(verbose)
     return (old_verbose if return_old_level else None)
