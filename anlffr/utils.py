@@ -66,13 +66,12 @@ def set_log_level(verbose=None, return_old_level=False):
         INFO, WARNING, ERROR, or CRITICAL. Note that these are for
         convenience and are equivalent to passing in logging.DEBUG, etc.
         For bool, True is the same as 'INFO', False is the same as 'WARNING'.
-        If None, the environment variable MNE_LOG_LEVEL is read, and if
-        it doesn't exist, defaults to INFO.
+        If None, defaults to INFO.
     return_old_level : bool
         If True, return the old verbosity level.
     """
     if verbose is None:
-        verbose = 'WARNING'
+        verbose = 'INFO'
     elif isinstance(verbose, bool):
         if verbose is True:
             verbose = 'INFO'

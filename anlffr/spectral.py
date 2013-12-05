@@ -17,7 +17,8 @@ def mtplv(x, params, verbose = None):
     
     Parameters
     ----------
-    x - Input data numpy array (channel x trial x time) or (trials x time)
+    x - Input data numpy array 
+        (channel x trial x time) or (trials x time)
     params - Dictionary of parameter settings
       params['Fs'] - sampling rate
       params['tapers'] - [TW, Number of tapers]
