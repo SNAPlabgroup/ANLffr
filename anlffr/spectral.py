@@ -103,6 +103,10 @@ def mtspec(x,params, verbose = None):
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
       
       params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      
+      params['noisefloortype'] - (optional) 1: random phase, 
+      0 (default): flip-phase
+      
     verbose : bool, str, int, or None
         The verbosity of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL.
@@ -123,7 +127,7 @@ def mtspec(x,params, verbose = None):
         trialdim = 1
         ntrials = x.shape[trialdim]
         nchans = x.shape[0]
-        logger.info('The data is of format #d channels x %d trials x time',
+        logger.info('The data is of format %d channels x %d trials x time',
                      nchans, ntrials)
     elif(len(x.shape) == 2):
         timedim = 1
@@ -151,12 +155,16 @@ def mtspec(x,params, verbose = None):
     for k,tap in enumerate(w):
         logger.info('Doing Taper #%d',k)
         xw = sci.fft(tap*x,n = nfft, axis = timedim)
-        # randph = sci.rand(nchans,ntrials,nfft)*2*sci.pi
-        randsign = np.ones((nchans,ntrials,nfft))
-        randsign[:,np.arange(0,ntrials,2),:] = -1
+        
         S[k,:,:] = abs(xw.mean(axis = trialdim))
-        # N[k,:,:] = abs((xw*sci.exp(1j*randph)).mean(axis = trialdim))
-        N[k,:,:] = abs((xw*(randsign.squeeze())).mean(axis = trialdim))
+            
+        if ('noisefloortype' in params) and (params['noisefloortype'] == 1):
+            randph = sci.rand(nchans,ntrials,nfft)*2*sci.pi
+            N[k,:,:] = abs((xw*sci.exp(1j*randph)).mean(axis = trialdim))
+        else:
+            randsign = np.ones((nchans,ntrials,nfft))
+            randsign[:,np.arange(0,ntrials,2),:] = -1
+            N[k,:,:] = abs((xw*(randsign.squeeze())).mean(axis = trialdim))
             
     # Average over tapers and squeeze to pretty shapes        
     S = S.mean(axis = 0).squeeze() 
