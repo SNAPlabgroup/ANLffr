@@ -1,1 +1,4 @@
-# Just an init file: Stay tuned!
+"""Tools to analyze and interpre FFR data
+
+"""
+

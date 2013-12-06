@@ -1,1 +1,5 @@
-# Just an init file: Stay tuned!
+"""Wrappers to deal with BDF files using MNE
+
+"""
+
+
