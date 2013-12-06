@@ -1,4 +1,4 @@
-"""Tools to analyze and interpre FFR data
+"""Tools to analyze and interpret FFR data
 
 """
 
