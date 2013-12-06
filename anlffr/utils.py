@@ -20,15 +20,23 @@ def verbose(function):
     Do not call this function directly to set the global verbosity level,
     instead use set_log_level().
 
-    Parameters (to decorated function)
-    ----------------------------------
-    verbose : bool, str, int, or None
+    Parameters
+    ----------
+    
+    verbose - bool, str, int, or None
         The level of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL. Note that these are for
         convenience and are equivalent to passing in logging.DEBUG, etc.
         For bool, True is the same as 'INFO', False is the same as 'WARNING'.
         None defaults to using the current log level [e.g., set using
         mne.set_log_level()].
+        
+    Returns
+    -------
+    
+    dec - function
+        The decorated function
+        
     """
     arg_names = inspect.getargspec(function).args
     # this wrap allows decorated functions to be pickled
@@ -64,14 +72,22 @@ def set_log_level(verbose=None, return_old_level=False):
 
     Parameters
     ----------
-    verbose : bool, str, int, or None
+    
+    verbose - bool, str, int, or None
         The verbosity of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL. Note that these are for
         convenience and are equivalent to passing in logging.DEBUG, etc.
         For bool, True is the same as 'INFO', False is the same as 'WARNING'.
         If None, defaults to WARNING.
-    return_old_level : bool
+    return_old_level - bool
         If True, return the old verbosity level.
+        
+    Returns
+    -------
+    
+    old_verbose - Old Verbosity Level
+        Returned if return_old_level is True
+        
     """
     if verbose is None:
         verbose = 'WARNING'
