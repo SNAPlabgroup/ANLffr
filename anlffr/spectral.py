@@ -516,7 +516,7 @@ def mtppc(x,params,verbose=None):
     Returns
     -------
     (ppc, f): Tuple
-        ppc - Multitapered phase-locking estimate (channel x frequency)
+        ppc - Multitapered PPC estimate (channel x frequency)
         
         f - Frequency vector matching ppc
     """
@@ -685,7 +685,7 @@ def mtpspec(x,params,verbose = None):
     Returns
     -------
     (pspec, f): Tuple
-        pspec - Multitapered phase-locking estimate (channel x frequency)
+        pspec - Multitapered Pairwise Power estimate (channel x frequency)
         
         f - Frequency vector matching ppc
     """
