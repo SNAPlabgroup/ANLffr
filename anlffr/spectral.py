@@ -29,7 +29,10 @@ def mtplv(x, params, verbose = None):
       params['pad'] - 1 or 0, to pad to the next power of 2 or not
       
       params['itc'] - 1 for ITC, 0 for PLV
-      
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
+        
     Returns
     -------
     (plvtap, f): Tuple
@@ -99,6 +102,9 @@ def mtspec(x,params, verbose = None):
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
       
       params['pad'] - 1 or 0, to pad to the next power of 2 or not
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
       
     Returns
     -------
@@ -178,7 +184,11 @@ def mtcpca(x,params, verbose = None):
       params['pad'] - 1 or 0, to pad to the next power of 2 or not
       
       params['itc'] - 1 for ITC, 0 for PLV
-      
+    
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
+    
     Returns
     -------
     Tuple (plv, f):
@@ -242,6 +252,9 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca', verbose = None):
         Dictionary of parameters to use when calling chosen function
     func - str
         'cpca' or 'plv' or 'itc' or 'spec' or 'ppc' or 'pspec'
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
     
     Returns
     -------
@@ -358,6 +371,9 @@ def indivboot(x,nPerDraw,nDraws, params, func = 'cpca', verbose = None):
         Dictionary of parameters to use when calling chosen function
     func - str
         'cpca' or 'plv' or 'itc' or 'spec' or 'ppc', i.e. which to call?
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
     
     Returns
     -------
@@ -481,6 +497,9 @@ def mtppc(x,params,verbose=None):
       params['Npairs'] - Number of pairs for PPC analysis
       
       params['itc'] - If True, normalize after mean like ITC instead of PLV
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
       
     Returns
     -------
@@ -574,6 +593,10 @@ def mtspecraw(x,params,verbose = None):
       
       params['pad'] - 1 or 0, to pad to the next power of 2 or not
       
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
+        
     Returns
     -------
     (Sraw, f): Tuple
@@ -643,6 +666,9 @@ def mtpspec(x,params,verbose = None):
       params['pad'] - 1 or 0, to pad to the next power of 2 or not
       
       params['Npairs'] - Number of pairs for pairwise analysis     
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
       
     Returns
     -------
