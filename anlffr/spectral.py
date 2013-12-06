@@ -9,39 +9,54 @@ import numpy as np
 from math import ceil
 import scipy as sci
 from scipy import linalg
+from .utils import logger, verbose
 
-def mtplv(x,params):
+@verbose
+def mtplv(x, params, verbose = None):
     """Multitaper Phase-Locking Value
     
     Parameters
     ----------
-    x - Input data numpy array (channel x trial x time) or (trials x time)
+    x - NumPy Array 
+        Input Data (channel x trial x time) or (trials x time)
     params - Dictionary of parameter settings
       params['Fs'] - sampling rate
-      params['tapers'] - [TW, Number of tapers]
-      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
-      params['pad'] - 1 or 0, to pad to the next power of 2 or not
-      params['itc'] - 1 for ITC, 0 for PLV
       
+      params['tapers'] - [TW, Number of tapers]
+      
+      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+      
+      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      
+      params['itc'] - 1 for ITC, 0 for PLV
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
+        
     Returns
     -------
-    Tuple (plvtap, f):
+    (plvtap, f): Tuple
         plvtap - Multitapered phase-locking estimate (channel x frequency)
+        
         f - Frequency vector matching plvtap
     """
-    
+    logger.info('Running Multitaper PLV Estimation')
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
         nchans = x.shape[0]
-        print 'The data is of format (channels x trials x time)'
+        ntrials = x.shape[trialdim]
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
     elif(len(x.shape) == 2):
         timedim = 1
         trialdim = 0
+        ntrials = x.shape[trialdim]
         nchans = 1
-        print 'The data is of format (trials x time) i.e. single channel'
+        logger.info('The data is of format %d trials x time (single channel)',
+                    ntrials)
     else:
-        print 'Sorry! The data should be a 2 or 3 dimensional array!'
+        logger.error('Sorry, The data should be a 2 or 3 dimensional array')
         
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -56,7 +71,7 @@ def mtplv(x,params):
     
     
     for k,tap in enumerate(w):
-        print 'Doing Taper #',k
+        logger.info('Doing Taper #%d', k)
         xw = sci.fft(tap*x,n = nfft, axis = timedim)
         
         if(params['itc'] == 0):
@@ -71,40 +86,54 @@ def mtplv(x,params):
     f = f[ind]
     return (plvtap,f)
 
-def mtspec(x,params):
+@verbose
+def mtspec(x,params, verbose = None):
     """Multitaper Spectrum and SNR estimate
     
     Parameters
     ----------
-    x - Input data numpy array (channel x trial x time) or (trials x time)
+    x - NumPy Array
+        Input data (channel x trial x time) or (trials x time)
+    
     params - Dictionary of parameter settings
       params['Fs'] - sampling rate
+      
       params['tapers'] - [TW, Number of tapers]
+      
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+      
       params['pad'] - 1 or 0, to pad to the next power of 2 or not
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
       
     Returns
     -------
-    Tuple (S, N ,f):
+    (S, N ,f): Tuple
         S - Multitapered spectrum (channel x frequency)
+        
         N - Noise floor estimate
+        
         f - Frequency vector matching S and N
     """
     
+    logger.info('Running Multitaper Spectrum and Noise-floor Estimation')
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
         ntrials = x.shape[trialdim]
         nchans = x.shape[0]
-        print 'The data is of format (channels x trials x time)'
+        logger.info('The data is of format #d channels x %d trials x time',
+                     nchans, ntrials)
     elif(len(x.shape) == 2):
         timedim = 1
         trialdim = 0
         ntrials = x.shape[trialdim]
         nchans = 1
-        print 'The data is of format (trials x time) i.e. single channel'
+        logger.info('The data is of format %d trials x time (single channel)',
+                    ntrials)
     else:
-        print 'Sorry! The data should be a 2 or 3 dimensional array!'
+        logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
         
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -120,7 +149,7 @@ def mtspec(x,params):
     
     
     for k,tap in enumerate(w):
-        print 'Doing Taper #',k
+        logger.info('Doing Taper #%d',k)
         xw = sci.fft(tap*x,n = nfft, axis = timedim)
         # randph = sci.rand(nchans,ntrials,nfft)*2*sci.pi
         randsign = np.ones((nchans,ntrials,nfft))
@@ -137,36 +166,49 @@ def mtspec(x,params):
     N = N[:,ind]
     f = f[ind]
     return (S,N,f)
-      
-def mtcpca(x,params):
+
+@verbose      
+def mtcpca(x,params, verbose = None):
     """Multitaper complex PCA and PLV
     
     Parameters
     ----------
-    x - Input data numpy array (channel x trial x time)
+    x - NumPy Array
+        Input data (channel x trial x time)
+    
     params - Dictionary of parameter settings
       params['Fs'] - sampling rate
-      params['tapers'] - [TW, Number of tapers]
-      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
-      params['pad'] - 1 or 0, to pad to the next power of 2 or not
-      params['itc'] - 1 for ITC, 0 for PLV
       
+      params['tapers'] - [TW, Number of tapers]
+      
+      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+      
+      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      
+      params['itc'] - 1 for ITC, 0 for PLV
+    
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
+    
     Returns
     -------
     Tuple (plv, f):
         plv - Multitapered PLV estimate using cPCA
+        
         f - Frequency vector matching plv
     """
     
+    logger.info('Running Multitaper Complex PCA based PLV Estimation')
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
         ntrials = x.shape[trialdim]
         nchans = x.shape[0]
-        print 'The data is of format (channels x trials x time)'
-        print nchans, 'Channels,', ntrials, 'Trials'
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
     else:
-        print 'Sorry! The data should be a 3 dimensional array!'
+        logger.error('Sorry! The data should be a 3 dimensional array!')
         
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -180,7 +222,7 @@ def mtcpca(x,params):
     plv = np.zeros((ntaps,nfft))
     
     for k,tap in enumerate(w):
-        print 'Doing Taper #', k
+        logger.info('Doing Taper #%d', k)
         xw = sci.fft(tap*x,n = nfft, axis = timedim)
         C = (xw.mean(axis = trialdim)/(abs(xw).mean(axis = trialdim))).squeeze()
         for fi in np.arange(0,nfft):
@@ -195,23 +237,34 @@ def mtcpca(x,params):
     plv = plv[ind]
     f = f[ind]
     return (plv,f)
-    
-def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
+
+@verbose    
+def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca', verbose = None):
     """Run spectral functions with bootstrapping over trials
     
     Parameters
     ----------
-    x - Input data (channel x trials x time) or (trials x time)
-    nPerDraw - Number of trials for each draw
-    nDraws - Number of draws
-    params - Dictionary of parameters to use when calling chosen function
-    func - 'cpca' or 'plv' or 'itc' or 'spec' or 'ppc' or 'pspec'
+    x - Numpy Array
+        Input data (channel x trials x time) or (trials x time)
+    nPerDraw - int
+        Number of trials for each draw
+    nDraws - int 
+        Number of draws
+    params - dict
+        Dictionary of parameters to use when calling chosen function
+    func - str
+        'cpca' or 'plv' or 'itc' or 'spec' or 'ppc' or 'pspec'
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
     
     Returns
     -------
-    (mu_func, v_func, f) for everything except when func == 'spec'
-    (S, N, vS, vN, f) when func == 'spec'
-    A 'v' prefix denotes variance estimate
+    (mu_func, v_func, f): Tuple
+        For everything except when func == 'spec'
+    (S, N, vS, vN, f): Tuple
+        When func == 'spec'
+    A 'v' prefix denotes variance estimate and a prefix 'mu' denotes mean.
     
     See help for mtcpca(), mtplv() and mtspec() for more details.
     
@@ -223,16 +276,20 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
     
     """
     
+    logger.info('Running a bootstrapped version of function: %s',func)
     if(len(x.shape) == 3):
         trialdim = 1
         ntrials = x.shape[trialdim]
-        print 'The data is of format (channels x trials x time)'
+        nchans = x.shape[0]
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
     elif(len(x.shape) == 2):
         trialdim = 0
         ntrials = x.shape[trialdim]
-        print 'The data is of format (trials x time) i.e. single channel'
+        logger.info('The data is of format %d trials x time (single channel)',
+                    ntrials)
     else:
-        print 'Sorry! The data should be a 2 or 3 dimensional array!'
+        logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
         
     if(func == 'spec'):
         S = 0
@@ -246,14 +303,14 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
     for drawnum in np.arange(0,nDraws):
         inds = np.random.randint(0,ntrials,nPerDraw)
         
-        print 'Doing Draw #',drawnum+1, '/', nDraws
+        logger.debug('Doing Draw #%d / %d',drawnum+1, nDraws)
         
         if(trialdim == 1):
             xdraw = x[:,inds,:]
         elif(trialdim == 0):
             xdraw = x[inds,:]
         else:
-            print 'Data not in the right formmat!'
+            logger.error('Data not in the right formmat!')
                
         if(func == 'spec'):
             (tempS,tempN,f) = mtspec(xdraw,params)
@@ -284,7 +341,7 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
             mu_func = mu_func + temp_func
             v_func = v_func + temp_func**2
         else:
-            print 'Unknown func argument!'
+            logger.error('Unknown func argument!')
             return
             
         
@@ -298,23 +355,34 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca'):
         v_func = (v_func - (mu_func**2)/nDraws)/(nDraws - 1)
         mu_func = mu_func/nDraws
         return (mu_func,v_func,f)
-        
-def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
+
+@verbose        
+def indivboot(x,nPerDraw,nDraws, params, func = 'cpca', verbose = None):
     """Run spectral functions with bootstrapping over trials 
     This also returns individual draw results, unlike bootfunc()
     
     Parameters
     ----------
-    x - Input data (channel x trials x time) or (trials x time)
-    nPerDraw - Number of trials for each draw
-    nDraws - Number of draws
-    params - Dictionary of parameters to use when calling chosen function
-    func - 'cpca' or 'plv' or 'itc' or 'spec' or 'ppc', i.e. which to call?
+    x - Numpy array
+        Input data (channel x trials x time) or (trials x time)
+    nPerDraw - int
+        Number of trials for each draw
+    nDraws - int 
+        Number of draws
+    params - dict
+        Dictionary of parameters to use when calling chosen function
+    func - str
+        'cpca' or 'plv' or 'itc' or 'spec' or 'ppc', i.e. which to call?
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
     
     Returns
     -------
-    (plv, f) for everything except when func == 'spec' (including 'ppc')
-    (S, N, f) when func == 'spec'
+    (plv, f) - Tuple
+        For everything except when func == 'spec' (including 'ppc')
+    (S, N, f)  - Tuple 
+        When func == 'spec'
     plv, S and N arrays will have an extra dimension spanning the draws.
     
     See help for mtcpca(), mtplv() and mtspec() for more details.
@@ -327,18 +395,21 @@ def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
     
     """
     
+    logger.info('Running a bootstrapped version of function: %s',func)
     if(len(x.shape) == 3):
         trialdim = 1
         ntrials = x.shape[trialdim]
         nchans = x.shape[0]
-        print 'The data is of format (channels x trials x time)'
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
     elif(len(x.shape) == 2):
         trialdim = 0
         ntrials = x.shape[trialdim]
         nchans = 1
-        print 'The data is of format (trials x time) i.e. single channel'
+        logger.info('The data is of format %d trials x time (single channel)',
+                    ntrials)
     else:
-        print 'Sorry! The data should be a 2 or 3 dimensional array!'
+        logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
         
     
     # Running 1 draw to get the right sizes
@@ -358,14 +429,14 @@ def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
     for drawnum in np.arange(0,nDraws):
         inds = np.random.randint(0,ntrials,nPerDraw)
         
-        print 'Doing Draw #',drawnum+1, '/', nDraws
+        logger.debug('Doing Draw #%d / %d',drawnum+1, nDraws)
         
         if(nchans > 1):
             xdraw = x[:,inds,:]
         elif(nchans == 1):
             xdraw = x[inds,:]
         else:
-            print 'Data not in the right formmat!'
+            logger.error('Data not in the right formmat!')
                
         if(func == 'spec'):
             if(nchans > 1):
@@ -397,7 +468,7 @@ def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
                 (plv[:,drawnum],f) = mtppc(x,params)
             
         else:
-            print 'Unknown func argument!'
+            logger.error('Unknown func argument!')
             return
             
         
@@ -406,42 +477,57 @@ def indivboot(x,nPerDraw,nDraws, params, func = 'cpca'):
         return (S,N,f)
     else:
         return (plv,f)                
-            
-def mtppc(x,params):
+
+@verbose            
+def mtppc(x,params,verbose=None):
     """Multitaper Pairwise Phase Consisttency
     
     Parameters
     ----------
-    x - Input data numpy array (channel x trial x time) or (trials x time)
+    x - Numpy array
+        Input data (channel x trial x time) or (trials x time)
     params - Dictionary of parameter settings
       params['Fs'] - sampling rate
+      
       params['tapers'] - [TW, Number of tapers]
+      
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+      
+      
       params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      
       params['Npairs'] - Number of pairs for PPC analysis
+      
       params['itc'] - If True, normalize after mean like ITC instead of PLV
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
       
     Returns
     -------
-    Tuple (ppc, f):
+    (ppc, f): Tuple
         ppc - Multitapered phase-locking estimate (channel x frequency)
+        
         f - Frequency vector matching ppc
     """
-    
+
+    logger.info('Running Multitaper Pairwise Phase Consistency Estimate')
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
         ntrials = x.shape[trialdim]
         nchans = x.shape[0]
-        print 'The data is of format (channels x trials x time)'
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
     elif(len(x.shape) == 2):
         timedim = 1
         trialdim = 0
         ntrials = x.shape[trialdim]
         nchans = 1
-        print 'The data is of format (trials x time) i.e. single channel'
+        logger.info('The data is of format %d trials x time (single channel)',
+                    ntrials)
     else:
-        print 'Sorry! The data should be a 2 or 3 dimensional array!'
+        logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
         
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -456,7 +542,7 @@ def mtppc(x,params):
     
     
     for k,tap in enumerate(w):
-        print 'Doing Taper #',k
+        logger.info('Doing Taper #%d',k)
         xw = sci.fft(tap*x,n = nfft, axis = timedim)
         
         npairs = params['Npairs']
@@ -491,38 +577,54 @@ def mtppc(x,params):
     ppc = ppc[:,ind]
     f = f[ind]
     return (ppc,f)
-        
-def mtspecraw(x,params):
+
+@verbose        
+def mtspecraw(x,params,verbose = None):
     """Multitaper Spectrum (of raw signal) 
     
     Parameters
     ----------
-    x - Input data numpy array (channel x trial x time) or (trials x time)
+    x - Numpy array
+        Input data numpy array (channel x trial x time) or (trials x time)
     params - Dictionary of parameter settings
       params['Fs'] - sampling rate
+      
       params['tapers'] - [TW, Number of tapers]
+      
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+      
       params['pad'] - 1 or 0, to pad to the next power of 2 or not
       
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
+        
     Returns
     -------
-    Tuple (Sraw, f):
+    (Sraw, f): Tuple
         Sraw - Multitapered spectrum (channel x frequency)
+        
         f - Frequency vector matching Sraw
     """
+    
+    logger.info('Running Multitaper Raw Spectrum Estimation')
     
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
         nchans = x.shape[0]
-        print 'The data is of format (channels x trials x time)'
+        ntrials = x.shape[trialdim]
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
     elif(len(x.shape) == 2):
         timedim = 1
         trialdim = 0
         nchans = 1
-        print 'The data is of format (trials x time) i.e. single channel'
+        ntrials = x.shape[trialdim]
+        logger.info('The data is of format %d trials x time (single channel)',
+                    ntrials)
     else:
-        print 'Sorry! The data should be a 2 or 3 dimensional array!'
+        logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
         
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -537,7 +639,7 @@ def mtspecraw(x,params):
     
     
     for k,tap in enumerate(w):
-        print 'Doing Taper #',k
+        logger.info('Doing Taper #%d',k)
         xw = sci.fft(tap*x,n = nfft, axis = timedim)
         Sraw[k,:,:] = (abs(xw)**2).mean(axis = trialdim)
          
@@ -547,41 +649,55 @@ def mtspecraw(x,params):
     Sraw = Sraw[:,ind]
     f = f[ind]
     return (Sraw,f)
-    
-def mtpspec(x,params):
+
+@verbose    
+def mtpspec(x,params,verbose = None):
     """Multitaper Pairwise Power Spectral estimate
     
     Parameters
     ----------
-    x - Input data numpy array (channel x trial x time) or (trials x time)
+    x - Numpy Array
+        Input data numpy array (channel x trial x time) or (trials x time)
     params - Dictionary of parameter settings
       params['Fs'] - sampling rate
+      
       params['tapers'] - [TW, Number of tapers]
+      
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+      
       params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      
       params['Npairs'] - Number of pairs for pairwise analysis     
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
       
     Returns
     -------
-    Tuple (pspec, f):
+    (pspec, f): Tuple
         pspec - Multitapered phase-locking estimate (channel x frequency)
+        
         f - Frequency vector matching ppc
     """
+    logger.info('Running Multitaper Pairwise Power Estimate')
     
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
         ntrials = x.shape[trialdim]
         nchans = x.shape[0]
-        print 'The data is of format (channels x trials x time)'
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
     elif(len(x.shape) == 2):
         timedim = 1
         trialdim = 0
         ntrials = x.shape[trialdim]
         nchans = 1
-        print 'The data is of format (trials x time) i.e. single channel'
+        logger.info('The data is of format %d trials x time (single channel)',
+                    ntrials)
     else:
-        print 'Sorry! The data should be a 2 or 3 dimensional array!'
+        logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
+        
         
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -596,7 +712,7 @@ def mtpspec(x,params):
     
     for ch in np.arange(0,nchans):
         for k,tap in enumerate(w):
-            print 'Running Channel #', ch, 'taper #', k
+            logger.debug('Running Channel # %d, taper #%d', ch,k)
             xw = sci.fft(tap*x,n = nfft, axis = timedim)
             npairs = params['Npairs']
             trial_pairs = np.random.randint(0,ntrials,(npairs,2))
