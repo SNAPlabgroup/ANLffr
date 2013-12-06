@@ -1,5 +1,6 @@
-# -*- coding: utf-8 -*-
 """
+Utility functions for the ANLffr package
+
 Created on Thu Dec  5 14:56:34 2013
 
 @author: Hari Bharadwaj
