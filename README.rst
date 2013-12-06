@@ -11,7 +11,7 @@ From the `Auditory Neuroscience Lab at Boston University <http://www.cns.bu.edu/
     from anlffr.helper import biosemi2mne
 
 
-The project homepage is http://github.com/haribharadwaj/ANLffr. The `examples directory <https://github.com/haribharadwaj/ANLffr/tree/master/examples>`_ contains a sample script that you could modify for your purposes. That would be a good place to get started! See `ARO2013 poster #923 <http://nmr.mgh.harvard.edu/~hari/HB_ARO2013_poster923.pdf>`_ for details of the multichannel complex-PCA method. The manuscript is under review/revision. For details of the PLV computation and bootstrapping, see `Zhu et al. (2013) <http://www.cns.bu.edu/~shinn/resources/pdfs/2013/2013JASA_Zhu.pdf>`_.
+The project homepage is http://nmr.mgh.harvard.edu/~hari/ANLffr/, where you can find more extensive documentation and a function reference. The `examples directory <https://github.com/haribharadwaj/ANLffr/tree/master/examples>`_ contains a sample script that you could modify for your purposes. That would be a good place to get started! See `ARO2013 poster #923 <http://nmr.mgh.harvard.edu/~hari/HB_ARO2013_poster923.pdf>`_ for details of the multichannel complex-PCA method. The manuscript is under review/revision. For details of the PLV computation and bootstrapping, see `Zhu et al. (2013) <http://www.cns.bu.edu/~shinn/resources/pdfs/2013/2013JASA_Zhu.pdf>`_.
 
 Get the latest code
 -------------------
