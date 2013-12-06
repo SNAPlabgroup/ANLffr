@@ -12,7 +12,9 @@ a set of tools to analyze and interpret auditory steady-state responses,
 particularly the subcortical kind commonly known as frequency-following responses (FFRs). 
 In particular, the package provides code for multitaper-analysis of spectra and phase locking 
 along with complex-principal component analysis of phase-locking for multichannel FFRs. 
-Support for "bootstrapping" any of the included functions is also available.
+Support for "bootstrapping" any of the included functions is also available. 
+The code repository lives on `github <http://github.com/haribharadwaj/ANLffr>`_. 
+See the `Introduction <intro.html>`_ page for instruction to obtain your copy.
 
 
 
