@@ -2,3 +2,5 @@
 
 """
 
+from .utils import set_log_level
+
