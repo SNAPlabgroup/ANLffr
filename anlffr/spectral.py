@@ -321,31 +321,31 @@ def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca', verbose = None):
             logger.error('Data not in the right formmat!')
                
         if(func == 'spec'):
-            (tempS,tempN,f) = mtspec(xdraw,params)
+            (tempS,tempN,f) = mtspec(xdraw,params,verbose=False)
             S = S + tempS
             N = N + tempN
             vS = vS + tempS**2
             vN = vN + tempN**2
         elif(func == 'cpca'):
-            (temp_func,f)  = mtcpca(xdraw,params)
+            (temp_func,f)  = mtcpca(xdraw,params,verbose=False)
             mu_func = mu_func + temp_func
             v_func = v_func + temp_func**2
         elif(func == 'itc'):
             params['itc'] = 1
-            (temp_func,f) = mtplv(xdraw,params)
+            (temp_func,f) = mtplv(xdraw,params,verbose=False)
             mu_func = mu_func + temp_func
             v_func = v_func + temp_func**2
         elif(func == 'plv'):
             params['plv'] = 0
-            (temp_func,f) = mtplv(xdraw,params)
+            (temp_func,f) = mtplv(xdraw,params,verbose=False)
             mu_func = mu_func + temp_func
             v_func = v_func + temp_func**2
         elif(func == 'ppc'):
-            (temp_func,f) = mtppc(xdraw,params)
+            (temp_func,f) = mtppc(xdraw,params,verbose=False)
             mu_func = mu_func + temp_func
             v_func = v_func + temp_func**2
         elif(func == 'pspec'):
-            (temp_func,f) = mtpspec(xdraw,params)
+            (temp_func,f) = mtpspec(xdraw,params,verbose=False)
             mu_func = mu_func + temp_func
             v_func = v_func + temp_func**2
         else:
@@ -422,16 +422,16 @@ def indivboot(x,nPerDraw,nDraws, params, func = 'cpca', verbose = None):
     
     # Running 1 draw to get the right sizes
     if(func == 'spec'):
-        (S,N,f) = mtspec(x,params)       
+        (S,N,f) = mtspec(x,params,verbose=False)       
         S = np.zeros(S.shape + (nDraws,))
         N = np.zeros(N.shape + (nDraws,))
         
     elif((func == 'plv') or (func == 'itc') or (func == 'ppc')):
-        (plv,f) = mtplv(x,params)
+        (plv,f) = mtplv(x,params,verbose=False)
         plv =  np.zeros(plv.shape + (nDraws,))
         
     elif(func == 'cpca'):
-        (plv,f) = mtcpca(x, params)
+        (plv,f) = mtcpca(x, params,verbose=False)
         plv =  np.zeros(plv.shape + (nDraws,))
 
     for drawnum in np.arange(0,nDraws):
@@ -448,32 +448,34 @@ def indivboot(x,nPerDraw,nDraws, params, func = 'cpca', verbose = None):
                
         if(func == 'spec'):
             if(nchans > 1):
-                (S[:,:,drawnum],N[:,:,drawnum],f) = mtspec(xdraw,params)
+                (S[:,:,drawnum],N[:,:,drawnum],f) = mtspec(xdraw,params,
+                                                           verbose=False)
             else:
-                (S[:,drawnum],N[:,drawnum],f) = mtspec(xdraw,params)
+                (S[:,drawnum],N[:,drawnum],f) = mtspec(xdraw,params,
+                                                       verbose=False)
            
         elif(func == 'cpca'):
-            (plv[:,drawnum],f)  = mtcpca(xdraw,params)
+            (plv[:,drawnum],f)  = mtcpca(xdraw,params,verbose=False)
            
         elif(func == 'itc'):
             params['itc'] = 1
             if(nchans > 1):
-                (plv[:,:,drawnum],f) = mtplv(xdraw,params)
+                (plv[:,:,drawnum],f) = mtplv(xdraw,params,verbose=False)
             else:
-                (plv[:,drawnum],f) = mtplv(x,params)
+                (plv[:,drawnum],f) = mtplv(x,params,verbose=False)
             
         elif(func == 'plv'):
             params['plv'] = 0
             if(nchans > 1):
-                (plv[:,:,drawnum],f) = mtplv(xdraw,params)
+                (plv[:,:,drawnum],f) = mtplv(xdraw,params,verbose=False)
             else:
-                (plv[:,drawnum],f) = mtplv(x,params)
+                (plv[:,drawnum],f) = mtplv(x,params,verbose=False)
                 
         elif(func == 'ppc'):
             if(nchans > 1):
-                (plv[:,:,drawnum],f) = mtppc(xdraw,params)
+                (plv[:,:,drawnum],f) = mtppc(xdraw,params,verbose=False)
             else:
-                (plv[:,drawnum],f) = mtppc(x,params)
+                (plv[:,drawnum],f) = mtppc(x,params,verbose=False)
             
         else:
             logger.error('Unknown func argument!')
