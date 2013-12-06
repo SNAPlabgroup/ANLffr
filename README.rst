@@ -23,7 +23,7 @@ To get the latest code using git, simply type::
 If you don't have git installed, you can download a zip or tarball
 of the latest code: https://github.com/haribharadwaj/ANLffr/archive/master.zip
 
-If you have pip, you may be able to download and install anlffr in one step using::
+If you have pip, you may be able to download and install anlffr in one step using (and hence skip the "Install anlffr" steps below)::
 
     pip install git+https://github.com/haribharadwaj/ANLffr.git --user
 
