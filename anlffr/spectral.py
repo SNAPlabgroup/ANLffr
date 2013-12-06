@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Oct  7 13:22:58 2013
+Spectral analysis functions for FFR data
 
-@author: hari 
+@author: Hari Bharadwaj
 """
 import nitime.algorithms as alg
 import numpy as np
