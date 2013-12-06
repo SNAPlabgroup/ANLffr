@@ -2,4 +2,8 @@
 *~
 *.zip
 *.tar.gz
-
+build
+doc/build
+doc/_build
+.DS_Store
+*.swp
