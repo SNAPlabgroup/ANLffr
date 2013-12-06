@@ -3,6 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+==================================
 Welcome to ANLffr's documentation!
 ==================================
 
@@ -15,7 +16,7 @@ Support for "bootstrapping" any of the included functions is also available.
 
 
 
-contents:
+Contents
 =========
 
 .. toctree::
@@ -24,7 +25,7 @@ contents:
    intro
    api
 
-indices and tables
+Indices and tables
 ==================
 
 * :ref:`genindex`
