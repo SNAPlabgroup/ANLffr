@@ -10,7 +10,7 @@ import inspect
 from functools import wraps
 import sys
 
-# from decorator import decorator as decorateWith
+#from decorator import decorator as markDecorator
 
       
         
@@ -18,7 +18,8 @@ logger = logging.getLogger('anlffr') # Used across all code
 logger.propagate = False # What to do in case of multiple imports
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
-    
+
+#@markDecorator    
 def verbose(function):
     """Decorator to allow functions to override default log level
 
