@@ -10,19 +10,15 @@ import inspect
 from functools import wraps
 import sys
 
-try:
-    from decorator import decorator
-except ImportError:
-    # Returning the original function if decorator module missing
-    def decorator(f):
-        return f
-        
+# from decorator import decorator as decorateWith
+
+      
         
 logger = logging.getLogger('anlffr') # Used across all code
 logger.propagate = False # What to do in case of multiple imports
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
-@decorator
+    
 def verbose(function):
     """Decorator to allow functions to override default log level
 
