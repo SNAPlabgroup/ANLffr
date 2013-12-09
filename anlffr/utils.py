@@ -8,6 +8,7 @@ Created on Thu Dec  5 14:56:34 2013
 import logging, inspect, re, sys
 from functools import wraps
 
+__all__ = ['logger', 'verbose', 'set_log_level']
 
 logger = logging.getLogger('anlffr') # Used across all code
 logger.propagate = False # What to do in case of multiple imports
