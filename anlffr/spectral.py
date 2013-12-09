@@ -40,7 +40,7 @@ def mtplv(x, params, verbose = None):
         
         f - Frequency vector matching plvtap
     """
-    print 'The verbose level is', verbose
+    
     logger.info('Running Multitaper PLV Estimation')
     if(len(x.shape) == 3):
         timedim = 2
