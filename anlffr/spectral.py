@@ -10,7 +10,7 @@ from math import ceil
 import scipy as sci
 from scipy import linalg
 from .utils import logger, verbose
-
+    
 @verbose
 def mtplv(x, params, verbose = None):
     """Multitaper Phase-Locking Value
@@ -40,6 +40,7 @@ def mtplv(x, params, verbose = None):
         
         f - Frequency vector matching plvtap
     """
+    print 'The verbose level is', verbose
     logger.info('Running Multitaper PLV Estimation')
     if(len(x.shape) == 3):
         timedim = 2
