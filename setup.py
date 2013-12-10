@@ -13,7 +13,7 @@ setup(
     version='0.1.0',
     author='Hari Bharadwaj',
     author_email='hari@nmr.mgh.harvard.edu',
-    packages=['anlffr','anlffr.helper'],
+    packages=['anlffr','anlffr.helper','anlffr.externals'],
     package_data={'anlffr.helper':['sysfiles/*']},
     url='http://github.com/haribharadwaj/ANLffr/',
     license='BSD (3 Clause)',
