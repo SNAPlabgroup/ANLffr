@@ -727,6 +727,10 @@ def mtpspec(x,params,verbose = None):
             xw = sci.fft(tap*x,n = nfft, axis = timedim)
             npairs = params['Npairs']
             trial_pairs = np.random.randint(0,ntrials,(npairs,2))
+            
+            # For unbiasedness, pairs should be made of independent trials!
+            trial_pairs = trial_pairs[np.not_equal(trial_pairs[:,0],
+                                                   trial_pairs[:,1])]
             if(nchans == 1):
                 xw_1 = xw[trial_pairs[:,0]]
                 xw_2 = xw[trial_pairs[:,1]]
