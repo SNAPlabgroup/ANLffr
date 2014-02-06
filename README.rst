@@ -59,9 +59,9 @@ including in particular a complete and searchable function reference.
 The `examples directory <https://github.com/haribharadwaj/ANLffr/tree/master/examples>`_ 
 contains a sample script that you could modify for your purposes. 
 That would be a good place to get started! 
-See `ARO2013 poster #923 <http://nmr.mgh.harvard.edu/~hari/HB_ARO2013_poster923.pdf>`_ 
+See `Bharadwaj & Shinn-Cunningham (2014) <http://www.sciencedirect.com/science/article/pii/S1388245714000443>`_
 for details of the multichannel complex-PCA method. 
-The manuscript is under review/revision. 
+The manuscript is currently in press. 
 For details of the PLV computation and bootstrapping, 
 see `Zhu et al. (2013) <http://www.cns.bu.edu/~shinn/resources/pdfs/2013/2013JASA_Zhu.pdf>`_.
 
