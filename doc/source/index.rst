@@ -11,7 +11,10 @@ From the `Auditory Neuroscience Lab at Boston University <http://www.cns.bu.edu/
 a set of tools to analyze and interpret auditory steady-state responses, 
 particularly the subcortical kind commonly known as frequency-following responses (FFRs). 
 In particular, the package provides code for multitaper-analysis of spectra and phase locking 
-along with complex-principal component analysis of phase-locking for multichannel FFRs. 
+along with complex-principal component analysis of phase-locking for multichannel FFRs.
+The manuscript describing the complex-PCA method
+to extract FFRs from multichannel recordings is
+`Bharadwaj & Shinn-Cunningham (2014) <http://www.sciencedirect.com/science/article/pii/S1388245714000443>`_.
 Support for "bootstrapping" any of the included functions is also available. 
 The code repository lives on `github <http://github.com/haribharadwaj/ANLffr>`_. 
 See the `Introduction <intro.html>`_ page for instructions to obtain your copy.
