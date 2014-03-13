@@ -279,7 +279,7 @@ def mtcspec(x,params, verbose = None):
         f - Frequency vector matching plv
     """
     
-    logger.info('Running Multitaper Complex PCA based PLV Estimation')
+    logger.info('Running Multitaper Complex PCA based power estimation!')
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
