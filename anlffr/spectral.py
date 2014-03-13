@@ -247,6 +247,78 @@ def mtcpca(x,params, verbose = None):
     f = f[ind]
     return (plv,f)
 
+@verbose      
+def mtcspec(x,params, verbose = None):
+    """Multitaper complex PCA and power spectral estimate
+    
+    Parameters
+    ----------
+    x - NumPy Array
+        Input data (channel x trial x time)
+    
+    params - Dictionary of parameter settings
+      params['Fs'] - sampling rate
+      
+      params['tapers'] - [TW, Number of tapers]
+      
+      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+      
+      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      
+      params['itc'] - 1 for ITC, 0 for PLV
+    
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
+    
+    Returns
+    -------
+    Tuple (cspec, f):
+        cspec - Multitapered PLV estimate using cPCA
+        
+        f - Frequency vector matching plv
+    """
+    
+    logger.info('Running Multitaper Complex PCA based PLV Estimation')
+    if(len(x.shape) == 3):
+        timedim = 2
+        trialdim = 1
+        ntrials = x.shape[trialdim]
+        nchans = x.shape[0]
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
+    else:
+        logger.error('Sorry! The data should be a 3 dimensional array!')
+        
+    # Calculate the tapers
+    ntaps = params['tapers'][1]
+    TW = params['tapers'][0]
+    w,conc = alg.dpss_windows(x.shape[timedim],TW,ntaps)
+    
+    # Make space for the PLV result
+    Fs = params['Fs']
+    nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    f = np.arange(0.0,nfft,1.0)*Fs/nfft
+    cspec = np.zeros((ntaps,nfft))
+    
+    for k,tap in enumerate(w):
+        logger.info('Doing Taper #%d', k)
+        xw = sci.fft(tap*x,n = nfft, axis = timedim)
+        C = (xw.mean(axis = trialdim)).squeeze()
+        for fi in np.arange(0,nfft):
+            Csd = np.outer(C[:,fi],C[:,fi].conj())
+            vals = linalg.eigh(Csd,eigvals_only = True)
+            cspec[k,fi] = vals[-1]/nchans
+                        
+            
+    # Average over tapers and squeeze to pretty shapes        
+    cspec = (cspec.mean(axis = 0)).squeeze()
+    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
+    cspec = cspec[ind]
+    f = f[ind]
+    return (cspec,f)
+    
+    
 @verbose    
 def bootfunc(x,nPerDraw,nDraws, params, func = 'cpca', verbose = None):
     """Run spectral functions with bootstrapping over trials
