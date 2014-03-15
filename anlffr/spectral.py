@@ -19,6 +19,7 @@ def mtplv(x, params, verbose = None):
     ----------
     x - NumPy Array 
         Input Data (channel x trial x time) or (trials x time)
+
     params - Dictionary of parameter settings
       params['Fs'] - sampling rate
       
@@ -26,9 +27,11 @@ def mtplv(x, params, verbose = None):
       
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
       
-      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      params['nfft'] - length of FFT used for calculations (default: next 
+        power of 2 greater than length of time dimension)
       
       params['itc'] - 1 for ITC, 0 for PLV
+
     verbose : bool, str, int, or None
         The verbosity of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL.
@@ -66,7 +69,13 @@ def mtplv(x, params, verbose = None):
     
     # Make space for the PLV result
     Fs = params['Fs']
-    nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    if 'nfft' not in params:
+        nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    else:
+        nfft = int(params['nfft'])
+        if nfft < x.shape[timedim]:
+            logger.error('nfft really should be greater than number of time points.')
+            
     f = np.arange(0.0,nfft,1.0)*Fs/nfft
     plvtap = np.zeros((ntaps,nchans,nfft))
     
@@ -103,7 +112,8 @@ def mtspec(x,params, verbose = None):
       
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
       
-      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      params['nfft'] - length of FFT used for calculations (default: next 
+        power of 2 greater than length of time dimension)
       
       params['noisefloortype'] - (optional) 1: random phase, 
       0 (default): flip-phase
@@ -147,7 +157,13 @@ def mtspec(x,params, verbose = None):
     
     # Make space for the results
     Fs = params['Fs']
-    nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    if 'nfft' not in params:
+        nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    else:
+        nfft = int(params['nfft'])
+        if nfft < x.shape[timedim]:
+            logger.error('nfft really should be greater than number of time points.')
+
     f = np.arange(0.0,nfft,1.0)*Fs/nfft
     S = np.zeros((ntaps,nchans,nfft))
     N = np.zeros((ntaps,nchans,nfft))
@@ -192,7 +208,8 @@ def mtcpca(x,params, verbose = None):
       
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
       
-      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      params['nfft'] - length of FFT used for calculations (default: next 
+        power of 2 greater than length of time dimension)
       
       params['itc'] - 1 for ITC, 0 for PLV
     
@@ -226,7 +243,13 @@ def mtcpca(x,params, verbose = None):
     
     # Make space for the PLV result
     Fs = params['Fs']
-    nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    if 'nfft' not in params:
+        nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    else:
+        nfft = int(params['nfft'])
+        if nfft < x.shape[timedim]:
+            logger.error('nfft really should be greater than number of time points.')
+
     f = np.arange(0.0,nfft,1.0)*Fs/nfft
     plv = np.zeros((ntaps,nfft))
     
@@ -263,7 +286,8 @@ def mtcspec(x,params, verbose = None):
       
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
       
-      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      params['nfft'] - length of FFT used for calculations (default: next 
+        power of 2 greater than length of time dimension)
       
       params['itc'] - 1 for ITC, 0 for PLV
     
@@ -297,7 +321,13 @@ def mtcspec(x,params, verbose = None):
     
     # Make space for the PLV result
     Fs = params['Fs']
-    nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    if 'nfft' not in params:
+        nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    else:
+        nfft = int(params['nfft'])
+        if nfft < x.shape[timedim]:
+            logger.error('nfft really should be greater than number of time points.')
+
     f = np.arange(0.0,nfft,1.0)*Fs/nfft
     cspec = np.zeros((ntaps,nfft))
     
@@ -577,7 +607,8 @@ def mtppc(x,params,verbose=None):
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
       
       
-      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      params['nfft'] - length of FFT used for calculations (default: next 
+        power of 2 greater than length of time dimension)
       
       params['Npairs'] - Number of pairs for PPC analysis
       
@@ -619,7 +650,13 @@ def mtppc(x,params,verbose=None):
     
     # Make space for the PLV result
     Fs = params['Fs']
-    nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    if 'nfft' not in params:
+        nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    else:
+        nfft = int(params['nfft'])
+        if nfft < x.shape[timedim]:
+            logger.error('nfft really should be greater than number of time points.')
+
     f = np.arange(0.0,nfft,1.0)*Fs/nfft
     ppc = np.zeros((ntaps,nchans,nfft))
     
@@ -676,7 +713,8 @@ def mtspecraw(x,params,verbose = None):
       
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
       
-      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      params['nfft'] - length of FFT used for calculations (default: next 
+        power of 2 greater than length of time dimension)
       
     verbose : bool, str, int, or None
         The verbosity of messages to print. If a str, it can be either DEBUG,
@@ -716,7 +754,13 @@ def mtspecraw(x,params,verbose = None):
     
     # Make space for the results
     Fs = params['Fs']
-    nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    if 'nfft' not in params:
+        nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    else:
+        nfft = int(params['nfft'])
+        if nfft < x.shape[timedim]:
+            logger.error('nfft really should be greater than number of time points.')
+
     f = np.arange(0.0,nfft,1.0)*Fs/nfft
     Sraw = np.zeros((ntaps,nchans,nfft))
     
@@ -748,7 +792,8 @@ def mtpspec(x,params,verbose = None):
       
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
       
-      params['pad'] - 1 or 0, to pad to the next power of 2 or not
+      params['nfft'] - length of FFT used for calculations (default: next 
+        power of 2 greater than length of time dimension)
       
       params['Npairs'] - Number of pairs for pairwise analysis     
     verbose : bool, str, int, or None
@@ -789,7 +834,13 @@ def mtpspec(x,params,verbose = None):
     
     # Make space for the PLV result
     Fs = params['Fs']
-    nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    if 'nfft' not in params:
+        nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    else:
+        nfft = int(params['nfft'])
+        if nfft < x.shape[timedim]:
+            logger.error('nfft really should be greater than number of time points.')
+
     f = np.arange(0.0,nfft,1.0)*Fs/nfft
     pspec = np.zeros((ntaps,nchans,nfft))
     
