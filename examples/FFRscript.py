@@ -5,6 +5,8 @@ from anlffr import spectral
 import pylab as pl
 
 # Adding Files and locations
+# This below is just an example
+# You have to edit this to supply your own data
 fpath = '/home/hari/Documents/MNEforBiosemi/'
 edfname = 'I13_depth_01.bdf'
 
@@ -30,7 +32,7 @@ x = epochs.get_data()
 # Reshaping to the format needed by spectral.mtcpca() and calling it
 x = x.transpose((1,0,2))
 x = x[0:32,:,:]
-params = dict(Fs=4096,fpass=[5,1000],tapers=[2, 3],pad=1,itc=1)
+params = dict(Fs=4096,fpass=[5,1000],tapers=[2, 3],itc=1)
 (plv,f) = spectral.mtcpca(x,params)
 
 

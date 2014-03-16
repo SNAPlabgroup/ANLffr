@@ -87,10 +87,9 @@ Briefly, consider the following example::
     # Sampling rate is 4096 Hz
     # Frequencies of interest are with 5 and 500 Hz
     # Calculate inter-trial coherence instead of PLV
-    # Zero-pad data to the next power of 2 for fast FFT
+    # Zero-pad data to the next power of 2 for fast FFT (default)
     # Use 3 tapers with the time-half bandwidth product of 2
-    params = dict(Fs = 4096, tapers = [2, 3], fpass = [5, 500], itc = 1,
-                  pad = 1)
+    params = dict(Fs = 4096, tapers = [2, 3], fpass = [5, 500], itc = 1)
 
     # Actually compute the phase-locking measure (ITC here)
     (plv, f) = spectral.mtplv(x, params)
