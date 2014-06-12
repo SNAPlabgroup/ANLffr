@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
-Just a utility function to detect blinks from raw files
+Module for preprocessing utilities. These are supposed to complement
+the preproessing utilities that are available with MNE.
+
 """
 import numpy as np
 
