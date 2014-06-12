@@ -17,6 +17,14 @@ ANLffr Function Reference
     :undoc-members:
     :show-inheritance:
 
+:mod:`preproc` Module
+----------------------
+
+.. automodule:: anlffr.preproc
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`utils` Module
 -------------------
 
