@@ -191,10 +191,11 @@ def mtspec(x,params, verbose = None):
     N = N[:,ind]
     f = f[ind]
     return (S,N,f)
-    
+
+
 @verbose
-def mtphase(x,params, verbose = None):
-    """Multitaper Spectrum and SNR estimate
+def mtphase(x, params, verbose=None):
+    """Multitaper phase estimation
 
     Parameters
     ----------
@@ -270,6 +271,7 @@ def mtphase(x,params, verbose = None):
     Ph = Ph[:, :, ind].mean(axis=0).squeeze()
     f = f[ind]
     return (Ph, f)
+
 
 @verbose      
 def mtcpca(x,params, verbose = None):
