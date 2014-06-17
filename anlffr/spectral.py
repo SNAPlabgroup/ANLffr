@@ -196,6 +196,86 @@ def mtspec(x, params, verbose=None):
 
 
 @verbose
+def mtphase(x, params, verbose=None):
+    """Multitaper phase estimation
+
+    Parameters
+    ----------
+    x - NumPy Array
+        Input data (channel x trial x time) or (trials x time)
+
+    params - Dictionary of parameter settings
+      params['Fs'] - sampling rate
+
+      params['tapers'] - [TW, Number of tapers]
+
+      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+
+      params['nfft'] - length of FFT used for calculations (default: next
+        power of 2 greater than length of time dimension)
+
+
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
+
+    Returns
+    -------
+    (Ph ,f): Tuple
+        Ph - Multitapered phase spectrum (channel x frequency)
+
+        f - Frequency vector matching S and N
+    """
+
+    logger.info('Running Multitaper Spectrum and Noise-floor Estimation')
+    if(len(x.shape) == 3):
+        timedim = 2
+        trialdim = 1
+        ntrials = x.shape[trialdim]
+        nchans = x.shape[0]
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
+    elif(len(x.shape) == 2):
+        timedim = 1
+        trialdim = 0
+        ntrials = x.shape[trialdim]
+        nchans = 1
+        logger.info('The data is of format %d trials x time (single channel)',
+                    ntrials)
+    else:
+        logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
+
+    # Calculate the tapers
+    ntaps = params['tapers'][1]
+    TW = params['tapers'][0]
+    w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
+
+    # Make space for the results
+    Fs = params['Fs']
+    if 'nfft' not in params:
+        nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+    else:
+        nfft = int(params['nfft'])
+        if nfft < x.shape[timedim]:
+            logger.error('nfft really should be greater '
+                         'than number of time points.')
+
+    f = np.arange(0.0, nfft, 1.0)*Fs/nfft
+    Ph = np.zeros((ntaps, nchans, nfft))
+
+    for k, tap in enumerate(w):
+        logger.info('Doing Taper #%d', k)
+        xw = sci.fft(tap*x, n=nfft, axis=timedim)
+        Ph[k, :, :] = np.angle(xw.mean(axis=trialdim))
+
+    # Average over tapers and squeeze to pretty shapes
+    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
+    Ph = Ph[:, :, ind].mean(axis=0).squeeze()
+    f = f[ind]
+    return (Ph, f)
+
+
+@verbose
 def mtcpca(x, params, verbose=None):
     """Multitaper complex PCA and PLV
 
@@ -681,7 +761,8 @@ def mtppc(x, params, verbose=None):
                 xw_2 = xw[trial_pairs[:, 1]]
                 ppc_unnorm = np.real((xw_1 * xw_2.conj()).mean(axis=trialdim))
                 ppc[k, :, :] = (ppc_unnorm /
-                    (abs(xw_1).mean(trialdim) * abs(xw_2).mean(trialdim)))
+                                (abs(xw_1).mean(trialdim) *
+                                 abs(xw_2).mean(trialdim)))
 
         else:
             if(not params['itc']):
@@ -696,7 +777,8 @@ def mtppc(x, params, verbose=None):
                 xw_2 = xw[:, trial_pairs[:, 1], :]
                 ppc_unnorm = np.real((xw_1 * xw_2.conj()).mean(axis=trialdim))
                 ppc[k, :, :] = (ppc_unnorm /
-                    (abs(xw_1).mean(trialdim) * abs(xw_2).mean(trialdim)))
+                                (abs(xw_1).mean(trialdim) *
+                                 abs(xw_2).mean(trialdim)))
 
     ppc = ppc.mean(axis=0).squeeze()
     ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
