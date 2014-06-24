@@ -434,6 +434,100 @@ def mtcspec(x, params, verbose=None):
 
 
 @verbose
+def mtcspec_timeDomain(x, params, verbose=None):
+    """Multitaper complex PCA and return time domain waveform
+
+    Note of caution
+    ---------------
+    The cPCA method is not really suited to extract fast transient features of
+    the time domain waveform. This is because, the frequency domain
+    representation of any signal (when you think of it as random process) is
+    interpretable only when the signal is stationary, i.e., in steady-state.
+    Practically speaking, the process of transforming short epochs to the
+    frequency domain necessarily involves smoothing in frequency. This
+    smoothing is minimized by tapering the original signal using DPSS windows,
+    also known as Slepian sequences. By using a larger number of tapers, the
+    effect of tapering in the time-domain can be made least obvious.
+
+    Also, for "onset" response type features, simple time domain PCA is likely
+    to perform as well as cPCA or better.
+
+    Parameters
+    ----------
+    x - NumPy Array
+        Input data (channel x trial x time)
+
+    params - Dictionary of parameter settings
+      params['Fs'] - sampling rate
+
+      params['tapers'] - [TW, Number of tapers]
+
+      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+
+      params['nfft'] - length of FFT used for calculations (default: next
+        power of 2 greater than length of time dimension)
+
+      params['itc'] - 1 for ITC, 0 for PLV
+
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
+
+    Returns
+    -------
+    y - Multitapered cPCA estimate of time-domain waveform
+
+    """
+
+    logger.info('Running Multitaper Complex PCA to extract time waveform!')
+    if(len(x.shape) == 3):
+        timedim = 2
+        trialdim = 1
+        ntrials = x.shape[trialdim]
+        nchans = x.shape[0]
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
+    else:
+        logger.error('Sorry! The data should be a 3 dimensional array!')
+
+    # Calculate the tapers
+    ntaps = params['tapers'][1]
+    TW = params['tapers'][0]
+    w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
+    if (ntaps < 3):
+        logger.warning('Use at least 3 tapers for better transient feature'
+                       ' representation')
+
+    # Make space for the PLV result
+    Fs = params['Fs']
+    if 'nfft' not in params:
+        nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
+    else:
+        nfft = int(params['nfft'])
+        if nfft < x.shape[timedim]:
+            logger.error(
+                'nfft really should be greater than number of time points.')
+
+    f = np.arange(0.0, nfft, 1.0) * Fs / nfft
+    cspec = np.zeros((ntaps, nfft))
+
+    for k, tap in enumerate(w):
+        logger.info('Doing Taper #%d', k)
+        xw = sci.fft(tap * x, n=nfft, axis=timedim)
+        C = (xw.mean(axis=trialdim)).squeeze()
+        for fi in np.arange(0, nfft):
+            Csd = np.outer(C[:, fi], C[:, fi].conj())
+            vals = linalg.eigh(Csd, eigvals_only=True)
+            cspec[k, fi] = vals[-1] / nchans
+
+    # Average over tapers and squeeze to pretty shapes
+    cspec = (cspec.mean(axis=0)).squeeze()
+    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
+    cspec = cspec[ind]
+    f = f[ind]
+    return (cspec, f)
+
+@verbose
 def bootfunc(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
     """Run spectral functions with bootstrapping over trials
 
