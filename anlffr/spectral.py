@@ -435,7 +435,8 @@ def mtcspec(x, params, verbose=None):
 
 @verbose
 def mtcspec_timeDomain(x, params, verbose=None):
-    """Multitaper complex PCA and return time domain waveform
+    """Multitaper complex PCA and regular time-domain PCA and return time
+    domain waveforms.
 
     Note of caution
     ---------------
@@ -462,12 +463,8 @@ def mtcspec_timeDomain(x, params, verbose=None):
 
       params['tapers'] - [TW, Number of tapers]
 
-      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
-
       params['nfft'] - length of FFT used for calculations (default: next
         power of 2 greater than length of time dimension)
-
-      params['itc'] - 1 for ITC, 0 for PLV
 
     verbose : bool, str, int, or None
         The verbosity of messages to print. If a str, it can be either DEBUG,
@@ -475,7 +472,8 @@ def mtcspec_timeDomain(x, params, verbose=None):
 
     Returns
     -------
-    y - Multitapered cPCA estimate of time-domain waveform
+    y_cpc - Multitapered cPCA estimate of time-domain waveform
+    y_pc - Regular time-domain PCA
 
     """
 
@@ -498,8 +496,7 @@ def mtcspec_timeDomain(x, params, verbose=None):
         logger.warning('Use at least 3 tapers for better transient feature'
                        ' representation')
 
-    # Make space for the PLV result
-    Fs = params['Fs']
+    # Make space for the CPCA resutls
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -508,8 +505,7 @@ def mtcspec_timeDomain(x, params, verbose=None):
             logger.error(
                 'nfft really should be greater than number of time points.')
 
-    f = np.arange(0.0, nfft, 1.0) * Fs / nfft
-    cspec = np.zeros((ntaps, nfft))
+    cpc_freq = np.zeros((ntaps, nfft), dtype=np.complex)
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
@@ -517,15 +513,22 @@ def mtcspec_timeDomain(x, params, verbose=None):
         C = (xw.mean(axis=trialdim)).squeeze()
         for fi in np.arange(0, nfft):
             Csd = np.outer(C[:, fi], C[:, fi].conj())
-            vals = linalg.eigh(Csd, eigvals_only=True)
-            cspec[k, fi] = vals[-1] / nchans
+            vals, vecs = linalg.eigh(Csd, eigvals_only=False)
+            cscale = (vals[-1] / nchans)**0.5
+            cwts = vecs[:, -1] * cscale / np.abs(vecs[:, -1]).sum()
+            cpc_freq[k, fi] = (cwts.conjugate()*C[:, fi]).sum()
 
-    # Average over tapers and squeeze to pretty shapes
-    cspec = (cspec.mean(axis=0)).squeeze()
-    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
-    cspec = cspec[ind]
-    f = f[ind]
-    return (cspec, f)
+    # Do ifft, average over tapers
+    y_cpc = sci.ifft(cpc_freq, n=x.shape[timedim], axis=1).mean(axis=0)
+
+    # Do time domain PCA
+    x_ave = x.mean(axis=trialdim)
+    C_td = np.cov(x_ave)
+    vals, vecs = linalg.eigh(C_td, eigvals_only=False)
+    y_pc = np.dot(vecs[:, -1].T, x_ave) / (vecs[:, -1].sum())
+
+    return (y_cpc, y_pc)
+
 
 @verbose
 def bootfunc(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
