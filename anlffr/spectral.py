@@ -434,7 +434,7 @@ def mtcspec(x, params, verbose=None):
 
 
 @verbose
-def mtcspec_timeDomain(x, params, verbose=None):
+def mtcpca_timeDomain(x, params, verbose=None):
     """Multitaper complex PCA and regular time-domain PCA and return time
     domain waveforms.
 
@@ -506,20 +506,24 @@ def mtcspec_timeDomain(x, params, verbose=None):
                 'nfft really should be greater than number of time points.')
 
     cpc_freq = np.zeros((ntaps, nfft), dtype=np.complex)
+    cspec = np.zeros((ntaps, nfft))
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
         xw = sci.fft(tap * x, n=nfft, axis=timedim)
         C = (xw.mean(axis=trialdim)).squeeze()
+        Cnorm = C / ((abs(xw).mean(axis=trialdim)).squeeze())
         for fi in np.arange(0, nfft):
-            Csd = np.outer(C[:, fi], C[:, fi].conj())
+            Csd = np.outer(Cnorm[:, fi], Cnorm[:, fi].conj())
             vals, vecs = linalg.eigh(Csd, eigvals_only=False)
-            cscale = (vals[-1] / nchans)**0.5
-            cwts = vecs[:, -1] * cscale / np.abs(vecs[:, -1]).sum()
+            cspec[k, fi] = vals[-1]  # / nchans
+            cwts = vecs[:, -1] / (np.abs(vecs[:, -1]).sum())
             cpc_freq[k, fi] = (cwts.conjugate()*C[:, fi]).sum()
 
-    # Do ifft, average over tapers
-    y_cpc = sci.ifft(cpc_freq, n=x.shape[timedim], axis=1).mean(axis=0)
+    # Filter through spectrum, do ifft, average over tapers
+    cscale = ((cspec**0.5).T / (cspec**0.5).T.sum(axis=0)).T
+    y_cpc = (sci.ifft(cpc_freq * cscale, axis=1).
+             mean(axis=0)[:x.shape[timedim]])
 
     # Do time domain PCA
     x_ave = x.mean(axis=trialdim)
