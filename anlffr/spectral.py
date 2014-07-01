@@ -447,11 +447,14 @@ def mtcpca_timeDomain(x, params, verbose=None):
     Practically speaking, the process of transforming short epochs to the
     frequency domain necessarily involves smoothing in frequency. This
     smoothing is minimized by tapering the original signal using DPSS windows,
-    also known as Slepian sequences. By using a larger number of tapers, the
-    effect of tapering in the time-domain can be made least obvious.
+    also known as Slepian sequences. The effect of this tapering would be
+    present when going back to the time domain.
 
     Also, for "onset" response type features, simple time domain PCA is likely
     to perform as well as cPCA or better.
+
+    Note that for sign of the output is indeterminate (you may need to flip
+    the output to match the polarity of signal channel responses)
 
     Parameters
     ----------
@@ -510,6 +513,7 @@ def mtcpca_timeDomain(x, params, verbose=None):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
+        tap = tap / tap.max()  # To preserve time-domain amplitude
         xw = sci.fft(tap * x, n=nfft, axis=timedim)
         C = (xw.mean(axis=trialdim)).squeeze()
         Cnorm = C / ((abs(xw).mean(axis=trialdim)).squeeze())
@@ -520,10 +524,11 @@ def mtcpca_timeDomain(x, params, verbose=None):
             cwts = vecs[:, -1] / (np.abs(vecs[:, -1]).sum())
             cpc_freq[k, fi] = (cwts.conjugate()*C[:, fi]).sum()
 
-    # Filter through spectrum, do ifft, average over tapers
+    # Filter through spectrum, do ifft, adding over even tapers
     cscale = ((cspec**0.5).T / (cspec**0.5).T.sum(axis=0)).T
+    cscale = cscale / cscale.max()  # Maxgain of filter = 1
     y_cpc = (sci.ifft(cpc_freq * cscale, axis=1).
-             mean(axis=0)[:x.shape[timedim]])
+             sum(axis=0)[:x.shape[timedim]])
 
     # Do time domain PCA
     x_ave = x.mean(axis=trialdim)
