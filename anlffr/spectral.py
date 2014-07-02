@@ -446,12 +446,15 @@ def mtcpca_timeDomain(x, params, verbose=None):
     interpretable only when the signal is stationary, i.e., in steady-state.
     Practically speaking, the process of transforming short epochs to the
     frequency domain necessarily involves smoothing in frequency. This
-    smoothing is minimized by tapering the original signal using DPSS windows,
+    leakage is minimized by tapering the original signal using DPSS windows,
     also known as Slepian sequences. The effect of this tapering would be
-    present when going back to the time domain.
+    present when going back to the time domain. Note that only a single taper
+    is used here as combining tapers with different symmetries in the time-
+    domain leads to funny cancellations.
 
-    Also, for "onset" response type features, simple time domain PCA is likely
-    to perform as well as cPCA or better.
+    Also, for transient features, simple time-domain PCA is likely
+    to perform better as the cPCA smoothes out  transient features. Thus
+    both regular time-domain PCA and cPCA outputs are returned.
 
     Note that for sign of the output is indeterminate (you may need to flip
     the output to match the polarity of signal channel responses)
@@ -463,8 +466,6 @@ def mtcpca_timeDomain(x, params, verbose=None):
 
     params - Dictionary of parameter settings
       params['Fs'] - sampling rate
-
-      params['tapers'] - [TW, Number of tapers]
 
       params['nfft'] - length of FFT used for calculations (default: next
         power of 2 greater than length of time dimension)
@@ -492,12 +493,8 @@ def mtcpca_timeDomain(x, params, verbose=None):
         logger.error('Sorry! The data should be a 3 dimensional array!')
 
     # Calculate the tapers
-    ntaps = params['tapers'][1]
-    TW = params['tapers'][0]
-    w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
-    if (ntaps < 3):
-        logger.warning('Use at least 3 tapers for better transient feature'
-                       ' representation')
+    w, conc = alg.dpss_windows(x.shape[timedim], 1, 1)
+    w = w.squeeze() / w.max()
 
     # Make space for the CPCA resutls
     if 'nfft' not in params:
@@ -508,27 +505,22 @@ def mtcpca_timeDomain(x, params, verbose=None):
             logger.error(
                 'nfft really should be greater than number of time points.')
 
-    cpc_freq = np.zeros((ntaps, nfft), dtype=np.complex)
-    cspec = np.zeros((ntaps, nfft))
+    cpc_freq = np.zeros(nfft, dtype=np.complex)
+    cspec = np.zeros(nfft)
+    xw = sci.fft(w * x, n=nfft, axis=timedim)
+    C = (xw.mean(axis=trialdim)).squeeze()
+    Cnorm = C / ((abs(xw).mean(axis=trialdim)).squeeze())
+    for fi in np.arange(0, nfft):
+        Csd = np.outer(Cnorm[:, fi], Cnorm[:, fi].conj())
+        vals, vecs = linalg.eigh(Csd, eigvals_only=False)
+        cspec[fi] = vals[-1]
+        cwts = vecs[:, -1] / (np.abs(vecs[:, -1]).sum())
+        cpc_freq[fi] = (cwts.conjugate()*C[:, fi]).sum()
 
-    for k, tap in enumerate(w):
-        logger.info('Doing Taper #%d', k)
-        tap = tap / tap.max()  # To preserve time-domain amplitude
-        xw = sci.fft(tap * x, n=nfft, axis=timedim)
-        C = (xw.mean(axis=trialdim)).squeeze()
-        Cnorm = C / ((abs(xw).mean(axis=trialdim)).squeeze())
-        for fi in np.arange(0, nfft):
-            Csd = np.outer(Cnorm[:, fi], Cnorm[:, fi].conj())
-            vals, vecs = linalg.eigh(Csd, eigvals_only=False)
-            cspec[k, fi] = vals[-1]  # / nchans
-            cwts = vecs[:, -1] / (np.abs(vecs[:, -1]).sum())
-            cpc_freq[k, fi] = (cwts.conjugate()*C[:, fi]).sum()
-
-    # Filter through spectrum, do ifft, adding over even tapers
-    cscale = ((cspec**0.5).T / (cspec**0.5).T.sum(axis=0)).T
+    # Filter through spectrum, do ifft.
+    cscale = cspec**0.5
     cscale = cscale / cscale.max()  # Maxgain of filter = 1
-    y_cpc = (sci.ifft(cpc_freq * cscale, axis=1).
-             sum(axis=0)[:x.shape[timedim]])
+    y_cpc = sci.ifft(cpc_freq * cscale)[:x.shape[timedim]]
 
     # Do time domain PCA
     x_ave = x.mean(axis=trialdim)
