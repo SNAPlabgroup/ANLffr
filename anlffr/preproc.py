@@ -67,12 +67,12 @@ def find_blinks(raw, event_id=998, thresh=100e-6, l_freq=0.2, h_freq=10,
                                            np.abs(blinkvals) >
                                            0.5*nominal_blink)]
 
-    # Discarding blinks detected before tstartt seconds
+    # Discarding blinks detected before tstart seconds
     eog_events = eog_events[eog_events > raw.time_as_index(tstart)]
     eog_events += first_samp
     n_events = len(eog_events)
     logger.info("Number of EOG events detected : %d" % n_events)
-    eog_events = np.c_[eog_events + first_samp, np.zeros(n_events),
+    eog_events = np.c_[eog_events, np.zeros(n_events),
                        event_id * np.ones(n_events)]
 
     return eog_events
