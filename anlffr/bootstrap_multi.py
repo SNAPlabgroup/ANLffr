@@ -188,17 +188,18 @@ def _validate_boostrap_params(params):
         assert 'nPerDraw' in params, ('when params[''nDraws''] is specified, ' +
                 'params[''nPerDraw''] must be too')
 
-        assert params['nDraw'] = int(params['nDraw']), 'params[''nDraw''] ' +
-            'must be an integer'
-        assert params['nPerDraw'] = int(params['nPerDraw']), 'params[''nPerDraw''] ' + 
-            'must be an integer'
+        assert params['nDraw'] == int(params['nDraw']), ('params[''nDraw''] ' +
+            'must be an integer')
+        assert params['nPerDraw'] == int(params['nPerDraw']), ('params[''nPerDraw''] ' + 
+            'must be an integer')
 
         assert params['nDraw'] > 0, 'params[''nDraw''] must be positive'
         assert params['nPerDraw'] > 0, 'params[''nPerDraw''] must be positive'
     
     if 'nThreads' in params:
         numCpu = multiprocessing.cpu_count()
-        assert(params['nThreads'] = int(params['nThreads']))
+        assert params['nThreads'] == int(params['nThreads']), ('nThreads must be an ' + 
+            'integer')
         assert 0 < params['nThreads'], 'params[''nThreads''] should be > 0'
         assert params['nThreads'] <= numCpu, ('params[''nThreads''] should be ' + 
             ' <= {}'.format(numCpu))
