@@ -861,7 +861,7 @@ def mtppc(x, params, verbose=None):
         logger.info('Doing Taper #%d', k)
         xw = sci.fft(tap * x, n=nfft, axis=timedim)
 
-        npairs = params['Npairs']
+        npairs = params['nPairs']
         trial_pairs = np.random.randint(0, ntrials, (npairs, 2))
 
         if(nchans == 1):
@@ -1173,7 +1173,8 @@ def mtcpca_complete(x, params, verbose = None):
 
 
 def generate_parameters(Fs = 4096, nfft = 4096, tapers = [2,3], 
-        fpass = [70.0, 1000.0], Npairs = 0, itc = False):
+        fpass = [70.0, 1000.0], nPairs = 0, itc = False, 
+        threads = 2, nDraw = 100, nPerDraw = 200):
     """
     Generates some default parameter values. 
    
@@ -1191,9 +1192,19 @@ def generate_parameters(Fs = 4096, nfft = 4096, tapers = [2,3],
     
     itc - whether to compute ITC (default: False) 
 
+    threads - number of threads to spawn for multiprocess 
+    bootstrap (default: 1)
+    
+    nDraw - number total draws of data for multiprocess bootstrap 
+    (default: 100) 
+
+    nPerDraw - number of trials to use per draw of data for multiprocess
+    bootstrap (default: 200)
+
+
     Returns
     ---------
-    Dictionary with reasonable default values for params.
+    Dictionary with reasonable example/default values for params.
 
     Note: this will create a frequency axis based on the inputs to
     nfft and Fs, as well as based on fpass. There will also be a key
@@ -1213,10 +1224,16 @@ def generate_parameters(Fs = 4096, nfft = 4096, tapers = [2,3],
     print 'Number of tapers = {} '.format(params['tapers'][1])
     params['fpass'] = list(fpass)
     print 'fpass = [{}, {}] '.format(params['fpass'][0], params['fpass'][1])
-    params['npairs'] = int(Npairs)
-    print 'npairs = {}'.format(params['npairs'])
+    params['nPairs'] = int(nPairs)
+    print 'nPairs = {}'.format(params['nPairs'])
     params['itc'] = bool(itc)
     print 'itc = {}'.format(params['itc'])
+    params['threads'] = int(threads)
+    print 'threads = {}'.format(params['threads'])
+    params['nDraw'] = int(nDraw)
+    print 'nDraw = {}'.format(params['nDraw'])
+    params['nPerDraw'] = int(nPerDraw)
+    print 'nPerDraw = {}'.format(params['nPerDraw'])
     
     _validate_parameters(params)
 
@@ -1224,7 +1241,7 @@ def generate_parameters(Fs = 4096, nfft = 4096, tapers = [2,3],
 
 def _validate_parameters(params):
 
-    if 'validated' not in params or params['validated'] == False:
+    if 'function_params_validated' not in params or params['function_params_validated'] == False:
 
         assert 'Fs' in params, 'params[''Fs''] must be specified'
         assert 'nfft' in params, 'params[''nfft''] must be specified'
@@ -1264,6 +1281,6 @@ def _validate_parameters(params):
 
             params['f'] = params['f'][params['fInd']]
 
-        params['validated'] = True
+        params['function_params_validated'] = True
 
     return params

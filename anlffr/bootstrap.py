@@ -7,7 +7,9 @@ def bootfunc(inputFunction, x, params, verbose = None):
     """
     Performs bootstrapping over trials for spectral functions, utilizing  
     multiple cores (threads) for a speed increase. Designed to work with the 
-    spectral analysis functions provided in ANLffr.
+    spectral analysis functions provided in ANLffr, but in theory should work
+    with any function that takes 3D numpy arrays and a suitable params structure
+    as inputs.
 
     Inputs
     ------
@@ -24,22 +26,31 @@ def bootfunc(inputFunction, x, params, verbose = None):
     
     params - dictionary of parameters. The following fields are required for
       boostrapping, but others may be required based on the specifics of 
-      'inputFunction':
+      inputFunction:
 
           params['nDraws'] - number of draws for bootstrapping
 
           params['nPerDraw'] - number of trials per draw for bootstrapping
           
-          params['threads'] - number of threads to spawn 
+          params['threads'] - number of threads to spawn; only really useful
+          if a multi-core CPU is available.
     
     Returns
     -------
     out - Dictionary of dictionaries. Level 1 keys corrspond to 
-      function outputs, level 2 keys correspond to mean, variance,
-      and individual draws for each key in level 1.
+      function outputs, level 2 keys correspond to individual draw
+      results, mean of draw results, and variance of draw results 
+      for each key in level 1.
+    
+    Example usage
+    -------
+    from anlffr import bootstrap
+
+    resultsDict = bootstrap.bootfunc(spectral.mtcpca_complete, 
+        [positivePolarityData, negativePolarityData], params)
     
     Notes 
-    ----- 
+    ------- 
     This is not implemented in a particularly clever or elegant way, as it is
     meant to "just work". But it does provide roughly a factor of N speedup
     (where N is the number of CPU cores dedicated to this task). The data array
@@ -48,7 +59,11 @@ def bootfunc(inputFunction, x, params, verbose = None):
     shouldn't be too much of a concern in poorly funded labs. But if you want
     something more memory efficient, go code it yourself.
 
-    Last updated: 7/22/2014
+    Tested using Debian 7, Python 2.7.3 virtual environment with numpy 
+    1.8.1, scipy 0.13.3, nitime 0.5. Code should be platform independent 
+    if dependencies are satistied, but no real effort has gone into checking.
+
+    Last updated: 7/24/2014
     Auditory Neuroscience Laboratory, Boston University
     Contact: lennyv@bu.edu 
     """
@@ -180,7 +195,7 @@ def _combine_random_subset(inputData, params):
 
 def _validate_bootstrap_params(params):
     """
-    internal function. checks/fixes parameters required for bootfunc.
+    internal function. checks parameters required for bootfunc.
     """
     if ('bootstrap_params_validated' not in params) or (params['bootstrap_params_validated']
             is False):
