@@ -105,15 +105,16 @@ def bootfunc(inputFunction, x, params, verbose = None):
         try:
             retrievedData = theQueue.get(True)
             numRetrieved = numRetrieved + 1
-            print('Retrieved data from draw {}'.format(numRetrieved))
 
             for k in retrievedData.keys():
                 if 1 == numRetrieved:
-                    results[k] = dict(runningSum = 0, runningSS = 0, indivDraw = [])
+                    results[k] = dict(runningSum = 0, runningSS = 0, indivDraw = [],
+                            trialsUsed = [])
 
-                results[k]['indivDraw'].append(retrievedData[k])
-                results[k]['runningSum'] += retrievedData[k]
-                results[k]['runningSS'] += retrievedData[k]**2
+                results[k]['trialsUsed'].append(retrievedData[1])
+                results[k]['indivDraw'].append(retrievedData[0][k])
+                results[k]['runningSum'] += retrievedData[0][k]
+                results[k]['runningSS'] += retrievedData[0][k]**2
 
         # the following should be OK, as per:
         # http://stackoverflow.com/questions/
@@ -125,6 +126,8 @@ def bootfunc(inputFunction, x, params, verbose = None):
                 raise
 
     for k in results.keys():
+        output[k] = {}
+        output[k]['trialsUsed'] = results[k]['trialsUsed']
         output[k]['nDraws'] = int(params['nDraws'])
         output[k]['nPerDraw'] = int(params['nPerDraw'])
         output[k]['indivDraw'] = np.array(results[k]['indivDraw'])
@@ -135,7 +138,7 @@ def bootfunc(inputFunction, x, params, verbose = None):
     
     print('Completed in: {} s'.format(time.time() - startTime))
 
-    return results
+    return output
 
 def _multiprocess_wrapper(inputFunction, inputData, params, nDraws, resultsQueue,
         randomState):
@@ -159,10 +162,10 @@ def _multiprocess_wrapper(inputFunction, inputData, params, nDraws, resultsQueue
         raise TypeError(errorString)
 
     for _ in range(nDraws):
-        theseData = _combine_random_trials(inputData, 
-                                           params['nPerDraw'],
-                                           randomState)
-        out = inputFunction(theseData, params, verbose = False)
+        theseData, trialsUsed = _combine_random_trials(inputData, 
+                                                       params['nPerDraw'],
+                                                       randomState)
+        out = (inputFunction(theseData, params, verbose = False), trialsUsed)
         resultsQueue.put(out)
 
 def _compute_variance(dataMean, dataSumOfSquares, n):
@@ -187,23 +190,21 @@ def _combine_random_trials(inputData, nPerDraw, randomState = None):
     numPools = len(inputData)
     useTrialsPerPool = int(nPerDraw) / numPools
 
-    # set printer options to always print the trials that this thing used
-    np.set_printoptions(linewidth=80, threshold = useTrialsPerPool + 1)
-
     tempData = []
+    pickTrials = []
 
     print('\n\nChoosing trials...\n\n ')
     for pool in range(numPools):
         if useTrialsPerPool > inputData[pool].shape[1]:
             print(warnString.format(pool))
 
-        pickTrials = randomState.randint(0,inputData[pool].shape[1],useTrialsPerPool)
         print('pool {}, trials: {}'.format(pool, pickTrials))
-        tempData.append(inputData[pool][:,pickTrials,:])
+        pickTrials.append(randomState.randint(0,inputData[pool].shape[1],useTrialsPerPool))
+        tempData.append(inputData[pool][:,pickTrials[-1],:])
 
     useData = np.concatenate(tuple(tempData), axis = 1)
 
-    return useData
+    return useData, pickTrials
 
 def _compute_thread_split(params):
     """
