@@ -198,7 +198,6 @@ def _combine_random_trials(inputData, nPerDraw, randomState = None):
         if useTrialsPerPool > inputData[pool].shape[1]:
             print(warnString.format(pool))
 
-        print('pool {}, trials: {}'.format(pool, pickTrials))
         pickTrials.append(randomState.randint(0,inputData[pool].shape[1],useTrialsPerPool))
         tempData.append(inputData[pool][:,pickTrials[-1],:])
 
