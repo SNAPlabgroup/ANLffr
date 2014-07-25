@@ -1163,7 +1163,6 @@ def mtcpca_complete(x, params, verbose = None):
     
     out = {}
     
-    keepIdx = params['fInd']
     out['mtcpcaSpectrum'] = cpcaSpectrum[params['fInd']]
     out['mtcpcaPLV'] = cpcaPhaseLockingValue[params['fInd']]
     out['mtcpcaSpectrumEigenvalues'] = cspec[:,params['fInd']]
@@ -1174,7 +1173,7 @@ def mtcpca_complete(x, params, verbose = None):
 
 def generate_parameters(Fs = 4096, nfft = 4096, tapers = [2,3], 
         fpass = [70.0, 1000.0], nPairs = 0, itc = False, 
-        threads = 2, nDraw = 100, nPerDraw = 200):
+        threads = 2, nDraws = 100, nPerDraw = 200, debugMode = False):
     """
     Generates some default parameter values. 
    
@@ -1201,6 +1200,7 @@ def generate_parameters(Fs = 4096, nfft = 4096, tapers = [2,3],
     nPerDraw - number of trials to use per draw of data for multiprocess
     bootstrap (default: 200)
 
+    debugMode - flag to set debugging on (to fix random seeds)
 
     Returns
     ---------
@@ -1210,7 +1210,6 @@ def generate_parameters(Fs = 4096, nfft = 4096, tapers = [2,3],
     nfft and Fs, as well as based on fpass. There will also be a key
     containing the logical indexes needed so that the functions in
     this module truncate their output to match the frequency vector.
-      
     """
 
     params = {}
@@ -1230,10 +1229,12 @@ def generate_parameters(Fs = 4096, nfft = 4096, tapers = [2,3],
     print 'itc = {}'.format(params['itc'])
     params['threads'] = int(threads)
     print 'threads = {}'.format(params['threads'])
-    params['nDraw'] = int(nDraw)
-    print 'nDraw = {}'.format(params['nDraw'])
+    params['nDraws'] = int(nDraws)
+    print 'nDraws = {}'.format(params['nDraws'])
     params['nPerDraw'] = int(nPerDraw)
     print 'nPerDraw = {}'.format(params['nPerDraw'])
+    params['debugMode'] = debugMode
+    print 'debugMode = {}'.format(params['debugMode'])
     
     _validate_parameters(params)
 
