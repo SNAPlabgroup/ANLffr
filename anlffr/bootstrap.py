@@ -136,6 +136,9 @@ def bootfunc(inputFunction, x, params, verbose = None):
                                                       results[k]['runningSS'],
                                                       params['nDraws'])
     output['trialsUsed'] = list(trialsUsed)
+
+    if f in params:
+        output['f'] = np.array(params['f'])
     
     print('Completed in: {} s'.format(time.time() - startTime))
 
