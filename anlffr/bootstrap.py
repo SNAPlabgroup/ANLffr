@@ -25,7 +25,7 @@ def bootfunc(inputFunction, x, params, verbose = None):
     x time as the first argument and a paramater dictionary as the second
     argument. Function must return a dictionary.
 
-    x - a 3D numpy array or list/tuple of 3D numpy arrays (chan x rep x time).
+    x - a 3D numpy array or list/tuple of 3D numpy arrays (chan x trial x time).
     If list/tuple with N elements, an equal number of trial repetitions from
     each array in the list will be used in each pass of the computation; i.e.,
     results will be computed by combining nPerDraw/N trials from per each pool
@@ -92,7 +92,7 @@ def bootfunc(inputFunction, x, params, verbose = None):
             print('setting fixed random seeds!')
             randomState = np.random.RandomState(proc)
         else:
-            randomState = np.random.RandomState()
+            randomState = np.random.RandomState(None)
 
         processList.append(multiprocessing.Process(target = _multiprocess_wrapper,
                            args = (inputFunction, x, params, drawSplit[proc], theQueue,
@@ -132,7 +132,7 @@ def bootfunc(inputFunction, x, params, verbose = None):
         output[k]['nPerDraw'] = int(params['nPerDraw'])
         output[k]['indivDraw'] = np.array(results[k]['indivDraw'])
         output[k]['bootMean'] = results[k]['runningSum'] / params['nDraws']
-        output[k]['bootVariance'] = _compute_variance(output[k]['mean'],
+        output[k]['bootVariance'] = _compute_variance(output[k]['bootMean'],
                                                       results[k]['runningSS'],
                                                       params['nDraws'])
     output['trialsUsed'] = list(trialsUsed)
