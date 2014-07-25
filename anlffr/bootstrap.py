@@ -100,21 +100,22 @@ def bootfunc(inputFunction, x, params, verbose = None):
         processList[proc].start()
 
     numRetrieved = 0
+    trialsUsed = []
 
     while numRetrieved < params['nDraws']:
         try:
             retrievedData = theQueue.get(True)
             numRetrieved = numRetrieved + 1
 
-            for k in retrievedData.keys():
+            for k in retrievedData[0].keys():
                 if 1 == numRetrieved:
-                    results[k] = dict(runningSum = 0, runningSS = 0, indivDraw = [],
-                            trialsUsed = [])
+                    results[k] = dict(runningSum = 0, runningSS = 0, indivDraw = [])
 
-                results[k]['trialsUsed'].append(retrievedData[1])
                 results[k]['indivDraw'].append(retrievedData[0][k])
                 results[k]['runningSum'] += retrievedData[0][k]
                 results[k]['runningSS'] += retrievedData[0][k]**2
+
+            trialsUsed.append(retrievedData[1])
 
         # the following should be OK, as per:
         # http://stackoverflow.com/questions/
@@ -127,7 +128,6 @@ def bootfunc(inputFunction, x, params, verbose = None):
 
     for k in results.keys():
         output[k] = {}
-        output[k]['trialsUsed'] = results[k]['trialsUsed']
         output[k]['nDraws'] = int(params['nDraws'])
         output[k]['nPerDraw'] = int(params['nPerDraw'])
         output[k]['indivDraw'] = np.array(results[k]['indivDraw'])
@@ -135,6 +135,7 @@ def bootfunc(inputFunction, x, params, verbose = None):
         output[k]['bootVariance'] = _compute_variance(output[k]['mean'],
                                                       results[k]['runningSS'],
                                                       params['nDraws'])
+    output['trialsUsed'] = list(trialsUsed)
     
     print('Completed in: {} s'.format(time.time() - startTime))
 
