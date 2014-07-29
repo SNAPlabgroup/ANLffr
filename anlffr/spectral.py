@@ -61,7 +61,7 @@ def mtplv(x, params, verbose=None):
     else:
         logger.error('Sorry, The data should be a 2 or 3 dimensional array')
 
-    validate_parameters(params)
+    _validate_parameters(params)
 
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -152,7 +152,7 @@ def mtspec(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
 
-    validate_parameters(params)
+    _validate_parameters(params)
 
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -248,7 +248,7 @@ def mtphase(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
 
-    validate_parameters(params)
+    _validate_parameters(params)
 
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -323,7 +323,7 @@ def mtcpca(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 3 dimensional array!')
 
-    validate_parameters(params)
+    _validate_parameters(params)
 
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -403,7 +403,7 @@ def mtcspec(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 3 dimensional array!')
 
-    validate_parameters(params)
+    _validate_parameters(params)
 
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -501,7 +501,7 @@ def mtcpca_timeDomain(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 3 dimensional array!')
     
-    validate_parameters(params)
+    _validate_parameters(params)
 
     # Calculate the tapers
     w, conc = alg.dpss_windows(x.shape[timedim], 1, 1)
@@ -838,7 +838,7 @@ def mtppc(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
     
-    validate_parameters(params)
+    _validate_parameters(params)
 
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -949,7 +949,7 @@ def mtspecraw(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
 
-    validate_parameters(params)
+    _validate_parameters(params)
 
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -1032,7 +1032,7 @@ def mtpspec(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
 
-    validate_parameters(params)
+    _validate_parameters(params)
 
     # Calculate the tapers
     ntaps = params['tapers'][1]
@@ -1104,16 +1104,23 @@ def mtcpca_complete(x, params, verbose = None):
     Returns
     -------
     dictionary with keys:
-         mtcpcaSpectrum - Multitapered power spectral estimate using cPCA
+         mtcpcaSpectrum_* - Multitapered power spectral estimate using cPCA
 
-         mtcpcaPLV- Multitapered PLV using cPCA
+         mtcpcaPLV_*- Multitapered PLV using cPCA
 
-         mtcpcaSpectrumEigenvalues - Eigenvalues from cpca on spectrum (taper x frequency)
+         mtcpcaSpectrumEigenvalues_* - Eigenvalues from cpca on spectrum (taper
+         x frequency)
 
-         mtcpcaPLVEigenvalues - Eigenvalues from cpca on PLV (taper x frequency)
+         mtcpcaPLVEigenvalues_* - Eigenvalues from cpca on PLV (taper x
+         frequency)
+
+     where * in the above is either randomPhase (results when phase of data is
+     randomized; for the purpose of obtaining a noise floor) or normalPhase
         
     """
     _validate_parameters(params)
+    
+    out = {}
     
     logger.info('Running Multitaper Complex PCA based power estimation!')
     if(len(x.shape) == 3):
@@ -1130,60 +1137,66 @@ def mtcpca_complete(x, params, verbose = None):
     nfft = params['nfft']
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
-    w,conc = alg.dpss_windows(x.shape[timedim],TW,ntaps)
+    w, conc = alg.dpss_windows(x.shape[timedim],TW,ntaps)
     
     plv = np.zeros((ntaps,nfft))
     cspec = np.zeros((ntaps,nfft))
 
-    for k,tap in enumerate(w):
-        logger.info('Doing Taper #%d', k)
-        xw = sci.fft(tap*x, n = nfft, axis = timedim)
+    for thisType in ['randomPhase','normalPhase']:
 
-        # power spectrum
-        C = (xw.mean(axis = trialdim)).squeeze()
-        # phase locking value
-        plvC = (xw.mean(axis = trialdim) / 
-                (abs(xw).mean(axis = trialdim))).squeeze() 
+        if thisType == 'randomPhase': # shift phases by random([0,1))*2*pi
+            useData = x * np.exp(2*np.pi*1j*np.random.random_sample(x.shape))
+        else:
+            useData = x
 
-        for fi in np.arange(0,nfft):
-            powerCsd = np.outer(C[:,fi],C[:,fi].conj())
-            powerEigenvals = linalg.eigh(powerCsd,eigvals_only = True)
-            cspec[k,fi] = powerEigenvals[-1]/nchans
-            
-            plvCsd = np.outer(plvC[:,fi],plvC[:,fi].conj())
-            plvEigenvals = linalg.eigh(plvCsd,eigvals_only = True)
-            plv[k,fi] = plvEigenvals[-1]/nchans
+        for k, tap in enumerate(w):
+            logger.info(thisType+'Doing Taper #%d', k)
 
-    # Average over tapers and squeeze to pretty shapes        
-    cpcaSpectrum = (cspec.mean(axis = 0)).squeeze()
-    cpcaPhaseLockingValue = (plv.mean(axis = 0)).squeeze()
+            xw = sci.fft( (tap*useData), n = nfft, axis = timedim)
 
-    assert cpcaSpectrum.shape == cpcaPhaseLockingValue.shape, ('shape mismatch between ' +
-            'PLV and magnitude result arrays')
+            # power spectrum
+            C = (xw.mean(axis = trialdim)).squeeze()
+            # phase locking value
+            plvC = (xw.mean(axis = trialdim) / 
+                    (abs(xw).mean(axis = trialdim))).squeeze() 
+
+            for fi in np.arange(0,nfft):
+                powerCsd = np.outer(C[:,fi],C[:,fi].conj())
+                powerEigenvals = linalg.eigh(powerCsd, eigvals_only = True)
+                cspec[k,fi] = powerEigenvals[-1]/nchans
+                
+                plvCsd = np.outer(plvC[:,fi],plvC[:,fi].conj())
+                plvEigenvals = linalg.eigh(plvCsd, eigvals_only = True)
+                plv[k,fi] = plvEigenvals[-1]/nchans
+
+        # Average over tapers and squeeze to pretty shapes        
+        cpcaSpectrum = (cspec.mean(axis = 0)).squeeze()
+        cpcaPhaseLockingValue = (plv.mean(axis = 0)).squeeze()
+
+        assert cpcaSpectrum.shape == cpcaPhaseLockingValue.shape, (
+                'shape mismatch between PLV and magnitude result arrays')
     
-    out = {}
-    
-    out['mtcpcaSpectrum'] = cpcaSpectrum[params['fInd']]
-    out['mtcpcaPLV'] = cpcaPhaseLockingValue[params['fInd']]
-    out['mtcpcaSpectrumEigenvalues'] = cspec[:,params['fInd']]
-    out['mtcpcaPLVEigenvalues'] = plv[:,params['fInd']]
+        out['mtcpcaSpectrum_' + thisType] = cpcaSpectrum[params['fInd']]
+        out['mtcpcaPLV_' + thisType] = cpcaPhaseLockingValue[params['fInd']]
+        out['mtcpcaSpectrumEigenvalues_' + thisType] = cspec[:,params['fInd']]
+        out['mtcpcaPLVEigenvalues_' + thisType] = plv[:,params['fInd']]
     
     return out 
 
 
-def generate_parameters(Fs = 4096, nfft = 4096, tapers = [2,3], 
-        fpass = [70.0, 1000.0], nPairs = 0, itc = False, 
+def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None, 
+        fpass = None, nPairs = 0, itc = False, 
         threads = 2, nDraws = 100, nPerDraw = 200, debugMode = False):
     """
     Generates some default parameter values. 
    
     Inputs
     ----------
-    Fs - sample rate (default: 4096)
+    sampleRate - sample rate (default: 4096)
 
     nfft - fft length (default: 4096)
 
-    tapers - list of [TW, number of tapers] (default: [2,3]
+    tapers - list of [TW, number of tapers] (default: [2,3])
     
     fpass - list of [f_low, f_high] (default: [70.0, 1000.0]
     
@@ -1212,10 +1225,19 @@ def generate_parameters(Fs = 4096, nfft = 4096, tapers = [2,3],
     this module truncate their output to match the frequency vector.
     """
 
+    # define this here because apparently a list is a "dangerous" 
+    # default argument as per PyLint
+    if tapers is None:
+        tapers = [2, 3]
+
+    if fpass is None:
+        fpass = [70.0, 1000.0]
+
+
     params = {}
 
-    params['Fs'] = int(Fs)
-    print '\nFs = {} Hz'.format(params['Fs'])
+    params['Fs'] = int(sampleRate)
+    print '\n sampleRate (Fs) = {} Hz'.format(params['Fs'])
     params['nfft'] = int(nfft)
     print 'nfft = {}'.format(params['nfft'])
     params['tapers'] = list(tapers)
@@ -1278,7 +1300,7 @@ def _validate_parameters(params):
                 params['fInd'] = ((params['f'] >= params['fpass'][0]) & 
                     (params['f'] <= params['fpass'][1]))
             else:
-                params['fInd'] = range(out['f'].shape[0])
+                params['fInd'] = range(params['f'].shape[0])
 
             params['f'] = params['f'][params['fInd']]
 
