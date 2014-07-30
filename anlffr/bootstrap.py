@@ -69,7 +69,7 @@ def bootfunc(inputFunction, x, params, verbose = None):
     scipy 0.13.3, nitime 0.5. Code should be platform independent if
     dependencies are satistied, but no effort has gone into checking.
 
-    Last updated: 7/25/2014
+    Last updated: 7/30/2014
     Auditory Neuroscience Laboratory, Boston University
     Contact: lennyv@bu.edu
     """
@@ -137,7 +137,7 @@ def bootfunc(inputFunction, x, params, verbose = None):
                                                       params['nDraws'])
     output['trialsUsed'] = list(trialsUsed)
 
-    if f in params:
+    if 'f' in params:
         output['f'] = np.array(params['f'])
     
     print('Completed in: {} s'.format(time.time() - startTime))
