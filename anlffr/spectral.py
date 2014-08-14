@@ -1142,12 +1142,31 @@ def mtcpca_complete(x, params, verbose = None):
     plv = np.zeros((ntaps,nfft))
     cspec = np.zeros((ntaps,nfft))
 
-    for thisType in ['randomPhase','normalPhase']:
+    phaseTypes = list(params['noiseFloorType'])
+    phaseTypes.append('normalPhase')
 
-        if thisType == 'randomPhase': # shift phases by random([0,1))*2*pi
-            useData = x * np.exp(2*np.pi*1j*np.random.random_sample(x.shape))
+    for thisType in phaseTypes:        
+        if thisType == 'randomPhaseAcrossSensorsAndTrials': # shift phases 
+            phaseShifter = np.exp(2*np.pi*1j*
+                np.random.random_sample((x.shape[0],x.shape[1],x.shape[2])))
+        
+        elif thisType == 'randomPhaseAcrossTrials':
+            # add the same random phase to each sensor within a trial
+            #sensor is first dim
+            phaseShifter = np.exp(2*np.pi*1j*
+                np.random.random_sample((1,x.shape[1],x.shape[2])))
+        elif thisType == 'phaseFlipHalfTrials':
+            # flip half the trials
+            phaseShifter = np.ones(x.shape)
+            permutedTrialOrder = np.random.permutation(range(x.shape[1]))
+            flipTheseTrials = permutedTrialOrder[0:int(x.shape[1]/2)]
+            phaseShifter[:,flipTheseTrials,:] = -1.0
+        elif thisType == 'normalPhase':
+            phaseShifter = 1.0
         else:
-            useData = x
+            logger.error('unrecognized selection for trial phase type')
+
+        useData = x*phaseShifter
 
         for k, tap in enumerate(w):
             logger.info(thisType+'Doing Taper #%d', k)
@@ -1186,7 +1205,8 @@ def mtcpca_complete(x, params, verbose = None):
 
 def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None, 
         fpass = None, nPairs = 0, itc = False, 
-        threads = 2, nDraws = 100, nPerDraw = 200, debugMode = False):
+        threads = 2, nDraws = 100, nPerDraw = 200, noiseFloorType = None, 
+        debugMode = False):
     """
     Generates some default parameter values. 
    
@@ -1213,6 +1233,18 @@ def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None,
     nPerDraw - number of trials to use per draw of data for multiprocess
     bootstrap (default: 200)
 
+    noiseFloorType - a list or string type of noise floor assumption(s) to use. 
+        valid choices are:
+        'phaseFlipHalfTrials'
+        'randomPhaseAcrossTrials'
+        'randomPhaseAcrossTrialsAndSensors'
+        
+        can be equivalently specified using a list of strings or a string
+        separated with whitespace. e.g.:
+        ['phaseFlipHalfTrials', 'randomPhaseAcrossTrials']
+        or 
+        noiseFloorType = 'phaseFlipHalfTrials randomPhaseAcrossTrials'
+
     debugMode - flag to set debugging on (to fix random seeds)
 
     Returns
@@ -1232,6 +1264,13 @@ def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None,
 
     if fpass is None:
         fpass = [70.0, 1000.0]
+
+    # removes whitespace characters and converts to list
+    if type(noiseFloorType) is str:
+        noiseFloorType = noiseFloorType.split()
+
+    if noiseFloorType is None:
+        noiseFloorType = ['phaseFlipHalfTrials']
 
 
     params = {}
@@ -1255,6 +1294,8 @@ def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None,
     print 'nDraws = {}'.format(params['nDraws'])
     params['nPerDraw'] = int(nPerDraw)
     print 'nPerDraw = {}'.format(params['nPerDraw'])
+    params['noiseFloorType'] = noiseFloorType 
+    print 'noiseFloorType = {}'.format(params['noiseFloorType'])
     params['debugMode'] = debugMode
     print 'debugMode = {}'.format(params['debugMode'])
     
@@ -1278,6 +1319,13 @@ def _validate_parameters(params):
             '(ntaps) must be a positive integer') # checking for numerical equivalence
         assert type(params['tapers'][1]) > 0, ('params[''tapers''][1] ' + 
             '(ntaps) must be a positive integer')
+    
+        if 'noiseFloorType' in params:
+            assert type(params['noiseFloorType']) is list, 'noiseFloorType should be a list'
+        
+            validNoiseFloors = ['phaseFlipHalfTrials', 'randomPhaseAcrossTrials', 'randomPhaseAcrossTrialsAndSensors']
+            for k in params['noiseFloorType']:
+                assert k in validNoiseFloors, 'unrecognized input for noiseFloorType'
         
         if 'fpass' in params:
             assert 2 == len(params['fpass'])
