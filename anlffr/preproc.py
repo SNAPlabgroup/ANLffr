@@ -60,9 +60,18 @@ def find_blinks(raw, event_id=998, thresh=100e-6, l_freq=0.2, h_freq=10,
                                l_trans_bandwidth=l_trans_bandwidth)
 
     eog_events, blinkvals = peak_finder(filteog.squeeze(), thresh=thresh)
+    eog_events_neg, blinkvals_neg = peak_finder(filteog.squeeze(),
+                                                thresh=thresh, extrema=-1)
 
-    # Discarding blinks that don't look like other blinks
+    # Discarding blinks that don't look like other blinks, electing polarity
     nominal_blink = np.median(np.abs(blinkvals))
+    nominal_blink_neg = np.median(np.abs(blinkvals_neg))
+
+    if nominal_blink_neg > nominal_blink:
+        blinkvals = blinkvals_neg
+        nominal_blink = nominal_blink_neg
+        eog_events = eog_events_neg
+
     eog_events = eog_events[np.logical_and(np.abs(blinkvals) < 2*nominal_blink,
                                            np.abs(blinkvals) >
                                            0.5*nominal_blink)]
