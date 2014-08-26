@@ -111,7 +111,9 @@ def bootfunc(inputFunction, x, params, verbose = None):
                 if 1 == numRetrieved:
                     results[k] = dict(runningSum = 0, runningSS = 0, indivDraw = [])
 
-                results[k]['indivDraw'].append(retrievedData[0][k])
+                if params['returnIndividualBootstrapResults']:
+                    results[k]['indivDraw'].append(retrievedData[0][k])
+
                 results[k]['runningSum'] += retrievedData[0][k]
                 results[k]['runningSS'] += retrievedData[0][k]**2
 
@@ -130,7 +132,8 @@ def bootfunc(inputFunction, x, params, verbose = None):
         output[k] = {}
         output[k]['nDraws'] = int(params['nDraws'])
         output[k]['nPerDraw'] = int(params['nPerDraw'])
-        output[k]['indivDraw'] = np.array(results[k]['indivDraw'])
+        if params['returnIndividualBootstrapResults']:
+            output[k]['indivDraw'] = np.array(results[k]['indivDraw'])
         output[k]['bootMean'] = results[k]['runningSum'] / params['nDraws']
         output[k]['bootVariance'] = _compute_variance(output[k]['bootMean'],
                                                       results[k]['runningSS'],
@@ -255,6 +258,11 @@ def _validate_bootstrap_params(params):
             assert 0 < params['threads'], 'params[''threads''] should be > 0'
             assert params['threads'] <= numCpu, ('params[''threads''] should be ' +
                 ' <= {}'.format(numCpu))
+
+        if 'returnIndividualBoostrapResults' in params:
+            params['returnIndividualBootstrapResults'] = bool(params['returnIndividualBootstrapResults'])
+        else:
+            params['returnIndividualBootstrapResults'] = False 
 
         params['bootstrap_params_validated'] = True
 

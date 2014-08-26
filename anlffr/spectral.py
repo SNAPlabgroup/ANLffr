@@ -1205,7 +1205,8 @@ def mtcpca_complete(x, params, verbose = None):
 
 def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None, 
         fpass = None, nPairs = 0, itc = False, 
-        threads = 2, nDraws = 100, nPerDraw = 200, noiseFloorType = None, 
+        threads = 2, nDraws = 100, nPerDraw = 200, 
+        returnIndividualBootstrapResults = False, noiseFloorType = None, 
         debugMode = False):
     """
     Generates some default parameter values. 
@@ -1232,6 +1233,9 @@ def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None,
 
     nPerDraw - number of trials to use per draw of data for multiprocess
     bootstrap (default: 200)
+
+    returnIndividualBootstrapResults - whether to return the individual draw 
+    results when running bootstrapped calculations (default: False)
 
     noiseFloorType - a list or string type of noise floor assumption(s) to use. 
         valid choices are:
@@ -1298,6 +1302,8 @@ def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None,
     print 'noiseFloorType = {}'.format(params['noiseFloorType'])
     params['debugMode'] = debugMode
     print 'debugMode = {}'.format(params['debugMode'])
+    params['returnIndividualBootstrapResults'] = returnIndividualBootstrapResults 
+    print 'returnIndividualBootstrapResults = {}'.format(params['returnIndividualBootstrapResults'])
     
     _validate_parameters(params)
 
