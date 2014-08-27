@@ -355,7 +355,7 @@ def mtcpca(x, params, verbose=None):
     plv = plv[params['fInd']]
 
     out = {}
-    out['mtcplv'] = plv 
+    out['mtcplv'] = plv
 
     return out
 
@@ -484,7 +484,7 @@ def mtcpca_timeDomain(x, params, verbose=None):
     -------
     Dictionary with the following keys:
       'y_cpc' - Multitapered cPCA estimate of time-domain waveform
-      
+
       'y_pc' - Regular time-domain PCA
 
     """
@@ -499,7 +499,7 @@ def mtcpca_timeDomain(x, params, verbose=None):
                     nchans, ntrials)
     else:
         logger.error('Sorry! The data should be a 3 dimensional array!')
-    
+
     _validate_parameters(params)
 
     # Calculate the tapers
@@ -1081,25 +1081,25 @@ def mtpspec(x, params, verbose=None):
 @verbose
 def mtcpca_complete(x, params, verbose = None):
     """Gets power spectra and plv using multitaper with complex PCA applied.
-    
+
     Parameters
     ----------
     x - NumPy Array
         Input data (channel x trial x time)
-    
-    params - dictionary. Must contain the following fields: 
+
+    params - dictionary. Must contain the following fields:
       params['Fs'] - sampling rate
-      
+
       params['tapers'] - [TW, Number of tapers]
-      
+
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
-      
-      params['nfft'] - length of FFT used for calculations 
-    
+
+      params['nfft'] - length of FFT used for calculations
+
     verbose : bool, str, int, or None
         The verbosity of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL.
-    
+
     Returns
     -------
     dictionary with keys:
@@ -1115,12 +1115,11 @@ def mtcpca_complete(x, params, verbose = None):
 
      where * in the above is either randomPhase (results when phase of data is
      randomized; for the purpose of obtaining a noise floor) or normalPhase
-        
     """
     _validate_parameters(params)
-    
+
     out = {}
-    
+
     logger.info('Running Multitaper Complex PCA based power estimation!')
     if(len(x.shape) == 3):
         timedim = 2
@@ -1131,24 +1130,24 @@ def mtcpca_complete(x, params, verbose = None):
                     nchans, ntrials)
     else:
         logger.error('Sorry! The data should be a 3 dimensional array!')
-        
+
     # Calculate the tapers
     nfft = params['nfft']
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = alg.dpss_windows(x.shape[timedim],TW,ntaps)
-    
+
     plv = np.zeros((ntaps,nfft))
     cspec = np.zeros((ntaps,nfft))
 
     phaseTypes = list(params['noiseFloorType'])
     phaseTypes.append('normalPhase')
 
-    for thisType in phaseTypes:        
-        if thisType == 'randomPhaseAcrossSensorsAndTrials': # shift phases 
+    for thisType in phaseTypes:
+        if thisType == 'randomPhaseAcrossSensorsAndTrials': # shift phases
             phaseShifter = np.exp(2*np.pi*1j*
                 np.random.random_sample((x.shape[0],x.shape[1],x.shape[2])))
-        
+
         elif thisType == 'randomPhaseAcrossTrials':
             # add the same random phase to each sensor within a trial
             #sensor is first dim
@@ -1176,40 +1175,40 @@ def mtcpca_complete(x, params, verbose = None):
             C = (xw.mean(axis = trialdim)).squeeze()
             # phase locking value
             plvC = (xw.mean(axis = trialdim) / 
-                    (abs(xw).mean(axis = trialdim))).squeeze() 
+                    (abs(xw).mean(axis = trialdim))).squeeze()
 
             for fi in np.arange(0,nfft):
                 powerCsd = np.outer(C[:,fi],C[:,fi].conj())
                 powerEigenvals = linalg.eigh(powerCsd, eigvals_only = True)
                 cspec[k,fi] = powerEigenvals[-1]/nchans
-                
+
                 plvCsd = np.outer(plvC[:,fi],plvC[:,fi].conj())
                 plvEigenvals = linalg.eigh(plvCsd, eigvals_only = True)
                 plv[k,fi] = plvEigenvals[-1]/nchans
 
-        # Average over tapers and squeeze to pretty shapes        
+        # Average over tapers and squeeze to pretty shapes
         cpcaSpectrum = (cspec.mean(axis = 0)).squeeze()
         cpcaPhaseLockingValue = (plv.mean(axis = 0)).squeeze()
-        
+
         if cpcaSpectrum.shape != cpcaPhaseLockingValue.shape:
             logger.error('shape mismatch between PLV and magnitude result arrays')
-    
+
         out['mtcpcaSpectrum_' + thisType] = cpcaSpectrum[params['fInd']]
         out['mtcpcaPLV_' + thisType] = cpcaPhaseLockingValue[params['fInd']]
         out['mtcpcaSpectrumEigenvalues_' + thisType] = cspec[:,params['fInd']]
         out['mtcpcaPLVEigenvalues_' + thisType] = plv[:,params['fInd']]
-    
-    return out 
+
+    return out
 
 @verbose
-def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None, 
-        fpass = None, nPairs = 0, itc = False, 
-        threads = 2, nDraws = 100, nPerDraw = 200, 
-        returnIndividualBootstrapResults = False, noiseFloorType = None, 
+def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None,
+        fpass = None, nPairs = 0, itc = False,
+        threads = 2, nDraws = 100, nPerDraw = 200,
+        returnIndividualBootstrapResults = False, noiseFloorType = None,
         debugMode = False):
     """
-    Generates some default parameter values. 
-   
+    Generates some default parameter values.
+
     Inputs
     ----------
     sampleRate - sample rate (default: 4096)
@@ -1217,35 +1216,35 @@ def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None,
     nfft - fft length (default: 4096)
 
     tapers - list of [TW, number of tapers] (default: [2,3])
-    
-    fpass - list of [f_low, f_high] (default: [70.0, 1000.0]
-    
-    npairs - number of trial pairs for pairwise analysis (default: 0) 
-    
-    itc - whether to compute ITC (default: False) 
 
-    threads - number of threads to spawn for multiprocess 
+    fpass - list of [f_low, f_high] (default: [70.0, 1000.0]
+
+    npairs - number of trial pairs for pairwise analysis (default: 0)
+
+    itc - whether to compute ITC (default: False)
+
+    threads - number of threads to spawn for multiprocess
     bootstrap (default: 1)
-    
-    nDraw - number total draws of data for multiprocess bootstrap 
-    (default: 100) 
+
+    nDraw - number total draws of data for multiprocess bootstrap
+    (default: 100)
 
     nPerDraw - number of trials to use per draw of data for multiprocess
     bootstrap (default: 200)
 
-    returnIndividualBootstrapResults - whether to return the individual draw 
+    returnIndividualBootstrapResults - whether to return the individual draw
     results when running bootstrapped calculations (default: False)
 
-    noiseFloorType - a list or string type of noise floor assumption(s) to use. 
+    noiseFloorType - a list or string type of noise floor assumption(s) to use.
         valid choices are:
         'phaseFlipHalfTrials'
         'randomPhaseAcrossTrials'
         'randomPhaseAcrossTrialsAndSensors'
-        
+
         can be equivalently specified using a list of strings or a string
         separated with whitespace. e.g.:
         ['phaseFlipHalfTrials', 'randomPhaseAcrossTrials']
-        or 
+        or
         noiseFloorType = 'phaseFlipHalfTrials randomPhaseAcrossTrials'
 
     debugMode - flag to set debugging on (to fix random seeds)
@@ -1258,9 +1257,11 @@ def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None,
     nfft and Fs, as well as based on fpass. There will also be a key
     containing the logical indexes needed so that the functions in
     this module truncate their output to match the frequency vector.
+
+    I should really switch this to some kind of kwarg function...
     """
 
-    # define this here because apparently a list is a "dangerous" 
+    # define this here because apparently a list is a "dangerous"
     # default argument as per PyLint
     if tapers is None:
         tapers = [2, 3]
@@ -1304,58 +1305,66 @@ def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None,
     params['returnIndividualBootstrapResults'] = returnIndividualBootstrapResults
     logger.info('returnIndividualBootstrapResults = {}'.format(params['returnIndividualBootstrapResults']))
 
-    print 'debugMode = {}'.format(params['debugMode'])
-    params['returnIndividualBootstrapResults'] = returnIndividualBootstrapResults 
-    print 'returnIndividualBootstrapResults = {}'.format(params['returnIndividualBootstrapResults'])
-    
     _validate_parameters(params)
 
     return params
 
 @verbose
 def _validate_parameters(params):
+    '''
+    internal function to validate parameters
+    '''
 
     if 'function_params_validated' not in params or params['function_params_validated'] == False:
 
-        assert 'Fs' in params, 'params[''Fs''] must be specified'
-        assert 'nfft' in params, 'params[''nfft''] must be specified'
-        assert 'tapers' in params, 'params[''tapers''] must be specified'
+        if 'Fs' not in params:
+            logger.error('params[''Fs''] must be specified')
+        if 'nfft' not in params:
+            logger.error('params[''nfft''] must be specified')
+        if 'tapers' not in params:
+            logger.error('params[''tapers''] must be specified')
 
         # check/fix taper input
-        assert len(params['tapers']) == 2, ('params[''tapers''] ' + 
-            'must be a list/tuple of form [TW, ntaps]')
-        assert params['tapers'][0] > 0, 'params[''tapers''][0] (TW) must be positive'
-        assert int(params['tapers'][1]) == params['tapers'][1], ('params[''tapers''][1] ' + 
-            '(ntaps) must be a positive integer') # checking for numerical equivalence
-        assert type(params['tapers'][1]) > 0, ('params[''tapers''][1] ' + 
-            '(ntaps) must be a positive integer')
-    
+        if len(params['tapers']) != 2:
+            logger.error('params[''tapers''] must be a list/tuple of form [TW, ntaps]')
+        if params['tapers'][0] <= 0:
+            logger.error('params[''tapers''][0] (TW) must be positive')
+        if int(params['tapers'][1]) != params['tapers'][1]:
+            logger.error('params[''tapers''][1] (ntaps) must be a positive integer')
+        if int(params['tapers'][1]) <= 0:
+            logger.error('params[''tapers''][1] (ntaps) must be a positive integer')
+
         if 'noiseFloorType' in params:
-            assert type(params['noiseFloorType']) is list, 'noiseFloorType should be a list'
-        
+            if type(params['noiseFloorType']) is not list:
+                logger.error('noiseFloorType should be a list')
+
             validNoiseFloors = ['phaseFlipHalfTrials', 'randomPhaseAcrossTrials', 'randomPhaseAcrossTrialsAndSensors']
             for k in params['noiseFloorType']:
-                assert k in validNoiseFloors, 'unrecognized input for noiseFloorType'
-        
+                if k not in validNoiseFloors:
+                    logger.error('unrecognized input for noiseFloorType')
+
         if 'fpass' in params:
-            assert 2 == len(params['fpass'])
-            assert 0 <= params['fpass'][0], 'params[''fpass[0]''] should be > 0'
-            assert params['Fs'] / 2.0 >= params['fpass'][1], ('params[''fpass''][1] ' + 
-                'should be <= params[''Fs'']/2')
-            assert params['fpass'][0] < params['fpass'][1], ('params[''fpass''][0] ' + 
-                    'should be < params[''fpass''][1]')
+            if 2 != len(params['fpass']):
+                logger.error('fpass must have two values')
+            if params['fpass'][0] < 0:
+                logger.error('params[''fpass[0]''] should be >= 0')
+            if params['Fs'] / 2.0 < params['fpass'][1]:
+                logger.error('params[''fpass''][1] should be <= params[''Fs'']/2')
+            if params['fpass'][0] >= params['fpass'][1]:
+                logger.error('params[''fpass''][0] should be < params[''fpass''][1]')
         else:
-            print('Using default params[''fpass''] of [0, params[''Fs'']/2]')
+            logger.info('Using default params[''fpass''] of [0, params[''Fs'']/2]')
             params['fpass'] = [0.0, params['Fs']/2.0]
-        
+
         # take care of frequency stuff
         if 'f' not in params:
-            assert 'fInd' not in params, 'f is not specified, but fInd is...something is wrong'
+            if 'fInd' in params:
+                logger.error('f is not specified, but fInd is...something is wrong')
 
             params['f'] = np.arange(0.0,params['nfft'],1.0) * params['Fs'] / params['nfft']
 
             if 'fpass' in params:
-                params['fInd'] = ((params['f'] >= params['fpass'][0]) & 
+                params['fInd'] = ((params['f'] >= params['fpass'][0]) &
                     (params['f'] <= params['fpass'][1]))
             else:
                 params['fInd'] = range(params['f'].shape[0])

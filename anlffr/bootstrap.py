@@ -171,7 +171,7 @@ def _multiprocess_wrapper(inputFunction, inputData, params, nDraws, resultsQueue
         raise TypeError(errorString)
 
     for _ in range(nDraws):
-        theseData, trialsUsed = _combine_random_trials(inputData, 
+        theseData, trialsUsed = _combine_random_trials(inputData,
                                                        params['nPerDraw'],
                                                        randomState)
         out = (inputFunction(theseData, params, verbose = False), trialsUsed)
@@ -185,7 +185,7 @@ def _compute_variance(dataMean, dataSumOfSquares, n):
 
 def _combine_random_trials(inputData, nPerDraw, randomState = None):
     """
-    internal function. creates a new data array from a series of randomly 
+    internal function. creates a new data array from a series of randomly
     sampled old ones. random sample is with replacement.
     """
 
@@ -240,31 +240,33 @@ def _validate_bootstrap_params(params):
         # check/fix bootStrap input
 
         if ('nDraw' in params) or ('nPerDraw' in params):
-            assert 'nDraws' in params, ('when params[''nPerDraw''] is specified, ' +
-                    'params[''nDraw''] must be too')
-            assert 'nPerDraw' in params, ('when params[''nDraws''] is specified, ' +
-                    'params[''nPerDraw''] must be too')
+            if 'nDraws' not in params:
+                logger.error('when params[''nPerDraw''] is specified, params[''nDraw''] must be too')
+            if 'nPerDraw' not in params:
+                logger.error('when params[''nDraws''] is specified, params[''nPerDraw''] must be too')
+            if params['nDraws'] != int(params['nDraws']):
+                logger.error('params[''nDraws''] must be an integer')
+            if params['nPerDraw'] != int(params['nPerDraw']):
+                logger.error('params[''nPerDraw''] must be an integer')
 
-            assert params['nDraws'] == int(params['nDraws']), ('params[''nDraws''] ' +
-                'must be an integer')
-            assert params['nPerDraw'] == int(params['nPerDraw']), ('params[''nPerDraw''] ' +
-                'must be an integer')
-
-            assert params['nDraws'] > 0, 'params[''nDraws''] must be positive'
-            assert params['nPerDraw'] > 0, 'params[''nPerDraw''] must be positive'
+            if params['nDraws'] <= 0:
+                logger.error('params[''nDraws''] must be positive')
+            if params['nPerDraw'] <= 0:
+                logger.error('params[''nPerDraw''] must be positive')
 
         if 'threads' in params:
             numCpu = multiprocessing.cpu_count()
-            assert params['threads'] == int(params['threads']), ('params[''threads''] must be an ' +
-                'integer')
-            assert 0 < params['threads'], 'params[''threads''] should be > 0'
-            assert params['threads'] <= numCpu, ('params[''threads''] should be ' +
-                ' <= {}'.format(numCpu))
+            if params['threads'] != int(params['threads']):
+                logger.error('params[''threads''] must be an integer')
+            if 0 > params['threads']:
+                logger.error('params[''threads''] should be > 0')
+            if params['threads'] > numCpu:
+                logger.error('params[''threads''] should be <= {}'.format(numCpu))
 
         if 'returnIndividualBoostrapResults' in params:
             params['returnIndividualBootstrapResults'] = bool(params['returnIndividualBootstrapResults'])
         else:
-            params['returnIndividualBootstrapResults'] = False 
+            params['returnIndividualBootstrapResults'] = False
 
         params['bootstrap_params_validated'] = True
 
