@@ -9,14 +9,16 @@ import numpy as np
 import time
 import multiprocessing
 import errno
-from .utils import logger, verbose
+from .utils import logger
+from .utils import verbose as verbose_decorator
 
-@verbose
-def bootfunc(inputFunction, x, params, verbose = None):
+
+@verbose_decorator
+def bootfunc(inputFunction, x, params, verbose=True):
     """
     Performs bootstrapping over trials for spectral functions, utilizing
     multiple cores (threads) for a speed increase. Designed to work with the
-    spectral analysis functions provided in ANLFFR, but in theory should work
+    spectral analysis functions provided in ANLffr, but in theory should work
     with any function that takes 3D numpy arrays and a suitable params
     structure as inputs.
 
@@ -27,12 +29,12 @@ def bootfunc(inputFunction, x, params, verbose = None):
     x time as the first argument and a paramater dictionary as the second
     argument. Function must return a dictionary.
 
-    x - a 3D numpy array or list/tuple of 3D numpy arrays (chan x trial x time).
-    If list/tuple with N elements, an equal number of trial repetitions from
-    each array in the list will be used in each pass of the computation; i.e.,
-    results will be computed by combining nPerDraw/N trials from per each pool
-    bootstrap repetition. The obvious use case is to sample an equal number of
-    trials from positive and negative polarity FFR trials.
+    x - a 3D numpy array or list/tuple of 3D numpy arrays (chan x trial x
+    time).  If list/tuple with N elements, an equal number of trial repetitions
+    from each array in the list will be used in each pass of the computation;
+    i.e., results will be computed by combining nPerDraw/N trials from per each
+    pool bootstrap repetition. The obvious use case is to sample an equal
+    number of trials from positive and negative polarity FFR trials.
 
     params - dictionary of parameters. The following fields are required for
     boostrapping, but others may be required based on the specifics of
@@ -53,9 +55,27 @@ def bootfunc(inputFunction, x, params, verbose = None):
 
     Example usage
     -------
+    # package imports
     from anlffr import bootstrap
-    resultsDict = bootstrap.bootfunc(spectral.mtcpca_complete,
-        [positivePolarityData, negativePolarityData], params)
+    from anlffr import spectral
+
+    # run spectral.generate_params
+    params = spectral.generate_params(...,
+                                      threads = 4,
+                                      nPerDraw = 250,
+                                      nDraws = 100)
+
+    # load preprocessed data sets with 3D arrays
+    positivePolarityData = io.loadmat(...)['data']
+    negativePolarityData = io.loadmat(...)['data']
+
+    # create a list of data
+    dataList = [positivePolaritydata, negativePolaritydata]
+
+    # run the boostrap function
+
+    results = bootstrap.bootfunc(spectral.mtcpca_complete, dataList, params)
+    ###
 
     Notes
     -------
@@ -71,7 +91,7 @@ def bootfunc(inputFunction, x, params, verbose = None):
     scipy 0.13.3, nitime 0.5. Code should be platform independent if
     dependencies are satistied, but no effort has gone into checking.
 
-    Last updated: 08/26/2014
+    Last updated: 08/27/2014
     Auditory Neuroscience Laboratory, Boston University
     Contact: lennyv@bu.edu
     """
@@ -91,14 +111,21 @@ def bootfunc(inputFunction, x, params, verbose = None):
     processList = []
     for proc in range(params['threads']):
         if ('debugMode' in params) and (params['debugMode']):
-            logger.info('setting fixed random seeds!')
+            logger.warn('Warning: setting fixed random seeds!')
             randomState = np.random.RandomState(proc)
         else:
             randomState = np.random.RandomState(None)
 
-        processList.append(multiprocessing.Process(target = _multiprocess_wrapper,
-                           args = (inputFunction, x, params, drawSplit[proc], theQueue,
-                                   randomState)))
+        processList.append(
+            multiprocessing.Process(
+                target=_multiprocess_wrapper,
+                args=(
+                    inputFunction,
+                    x,
+                    params,
+                    drawSplit[proc],
+                    theQueue,
+                    randomState)))
         processList[proc].start()
 
     numRetrieved = 0
@@ -111,20 +138,20 @@ def bootfunc(inputFunction, x, params, verbose = None):
 
             for k in retrievedData[0].keys():
                 if 1 == numRetrieved:
-                    results[k] = dict(runningSum = 0, runningSS = 0, indivDraw = [])
+                    results[k] = dict(runningSum=0, runningSS=0, indivDraw=[])
 
                 if params['returnIndividualBootstrapResults']:
                     results[k]['indivDraw'].append(retrievedData[0][k])
 
                 results[k]['runningSum'] += retrievedData[0][k]
-                results[k]['runningSS'] += retrievedData[0][k]**2
+                results[k]['runningSS'] += retrievedData[0][k] ** 2
 
             trialsUsed.append(retrievedData[1])
 
         # the following should be OK, as per:
         # http://stackoverflow.com/questions/
         #        4952247/interrupted-system-call-with-processing-queue
-        except IOError, e:
+        except IOError as e:
             if e.errno == errno.EINTR:
                 continue
             else:
@@ -144,58 +171,75 @@ def bootfunc(inputFunction, x, params, verbose = None):
 
     if 'f' in params:
         output['f'] = np.array(params['f'])
-    
+
     logger.info('Completed in: {} s'.format(time.time() - startTime))
 
     return output
 
-def _multiprocess_wrapper(inputFunction, inputData, params, nDraws, resultsQueue,
-        randomState):
+
+@verbose_decorator
+def _multiprocess_wrapper(
+        inputFunction,
+        inputData,
+        params,
+        nDraws,
+        resultsQueue,
+        randomState,
+        verbose=True):
     """
     internal function. places results from spectral functions in queue.
     """
     # set random seed here, otherwise this might draw the same pool
     # of trials across all processes
 
-    errorString = 'Data should be 3D numpy array or list/tuple of 3D numpy arrays'
-    # allows you to specify a list of data from each polarity (or other things you want to
-    # combine across) so that the number of trials going into a computation from different
-    # sources can be fixed
-    if type(inputData) == list or type(inputData) == tuple:
+    errorString = ('Data should be 3D numpy array or list/tuple ' +
+                   'of 3D numpy arrays')
+
+    # allows you to specify a list of data from each polarity (or other things
+    # you want to combine across) so that the number of trials going into a
+    # computation from different sources can be fixed
+    if isinstance(inputData, list) or isinstance(inputData, tuple):
         for x in inputData:
-            if type(x) != np.ndarray and x.ndim !=3:
-                raise TypeError(errorString)
-    elif type(inputData) == np.ndarray:
+            if not isinstance(x, np.ndarray) and x.ndim != 3:
+                logger.error(errorString)
+    elif isinstance(inputData, np.ndarray):
         inputData = [inputData]
     else:
-        raise TypeError(errorString)
+        logger.error(errorString)
 
     for _ in range(nDraws):
         theseData, trialsUsed = _combine_random_trials(inputData,
                                                        params['nPerDraw'],
                                                        randomState)
-        out = (inputFunction(theseData, params, verbose = False), trialsUsed)
+        out = (inputFunction(theseData, params, verbose=False), trialsUsed)
         resultsQueue.put(out)
 
-def _compute_variance(dataMean, dataSumOfSquares, n):
+
+@verbose_decorator
+def _compute_variance(dataMean, dataSumOfSquares, n, verbose=None):
     """
      internal function. computes variance from running SS, mean, and n.
     """
-    return (dataSumOfSquares - ((dataMean*n)**2) / n ) / (n-1)
+    return (dataSumOfSquares - ((dataMean * n) ** 2) / n) / (n - 1)
 
-def _combine_random_trials(inputData, nPerDraw, randomState = None):
+
+@verbose_decorator
+def _combine_random_trials(inputData,
+                           nPerDraw,
+                           randomState=None,
+                           verbose=True):
     """
     internal function. creates a new data array from a series of randomly
     sampled old ones. random sample is with replacement.
     """
 
-    assert type(inputData) == list, 'inputData should be a list of arrays'
+    assert isinstance(inputData, list), 'inputData should be a list of arrays'
 
     if randomState is None:
         randomState = np.random.RandomState()
 
     warnString = ('warning: number of trials requested in draw ' +
-        '> trials available for pool {}')
+                  '> trials available for pool {}')
     numPools = len(inputData)
     useTrialsPerPool = int(nPerDraw) / numPools
 
@@ -207,14 +251,21 @@ def _combine_random_trials(inputData, nPerDraw, randomState = None):
         if useTrialsPerPool > inputData[pool].shape[1]:
             logger.warning(warnString.format(pool))
 
-        pickTrials.append(randomState.randint(0,inputData[pool].shape[1],useTrialsPerPool))
-        tempData.append(inputData[pool][:,pickTrials[-1],:])
+        randTrials = randomState.randint(
+            0,
+            inputData[pool].shape[1],
+            useTrialsPerPool)
 
-    useData = np.concatenate(tuple(tempData), axis = 1)
+        pickTrials.append(randTrials)
+        tempData.append(inputData[pool][:, pickTrials[-1], :])
+
+    useData = np.concatenate(tuple(tempData), axis=1)
 
     return useData, pickTrials
 
-def _compute_thread_split(params):
+
+@verbose_decorator
+def _compute_thread_split(params, verbose=None):
     """
     internal function. computes how many draws each process will take on.
 
@@ -230,41 +281,51 @@ def _compute_thread_split(params):
 
     return drawSplit
 
-def _validate_bootstrap_params(params):
-    """
+
+@verbose_decorator
+def _validate_bootstrap_params(params, verbose=True):
+    '''
     internal function. checks parameters required for bootfunc.
-    """
-    if ('bootstrap_params_validated' not in params) or (params['bootstrap_params_validated']
-            is False):
+    '''
+    if (('bootstrap_params_validated' not in params) or
+            (params['bootstrap_params_validated'] is False)):
 
         # check/fix bootStrap input
 
         if ('nDraw' in params) or ('nPerDraw' in params):
             if 'nDraws' not in params:
-                logger.error('when params[''nPerDraw''] is specified, params[''nDraw''] must be too')
+                logger.error('when params[''nPerDraw''] is specified, ' +
+                             'params[''nDraw''] must be too')
+
             if 'nPerDraw' not in params:
-                logger.error('when params[''nDraws''] is specified, params[''nPerDraw''] must be too')
+                logger.error('when params[''nDraws''] is specified, ' +
+                             'params[''nPerDraw''] must be too')
+
             if params['nDraws'] != int(params['nDraws']):
                 logger.error('params[''nDraws''] must be an integer')
+
             if params['nPerDraw'] != int(params['nPerDraw']):
                 logger.error('params[''nPerDraw''] must be an integer')
 
             if params['nDraws'] <= 0:
                 logger.error('params[''nDraws''] must be positive')
+
             if params['nPerDraw'] <= 0:
                 logger.error('params[''nPerDraw''] must be positive')
 
         if 'threads' in params:
             numCpu = multiprocessing.cpu_count()
-            if params['threads'] != int(params['threads']):
-                logger.error('params[''threads''] must be an integer')
+
             if 0 > params['threads']:
                 logger.error('params[''threads''] should be > 0')
+
             if params['threads'] > numCpu:
-                logger.error('params[''threads''] should be <= {}'.format(numCpu))
+                logger.error(
+                    'params[''threads''] should be <= {}'.format(numCpu))
 
         if 'returnIndividualBoostrapResults' in params:
-            params['returnIndividualBootstrapResults'] = bool(params['returnIndividualBootstrapResults'])
+            params['returnIndividualBootstrapResults'] = (
+                bool(params['returnIndividualBootstrapResults']))
         else:
             params['returnIndividualBootstrapResults'] = False
 
