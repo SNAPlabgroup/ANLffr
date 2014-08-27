@@ -10,7 +10,8 @@ with two polarities each, stored in files of the form
 400 ms long.
 
 This generates a .csv file with the results after bootstrapping in an
-"Excel-friendly" format.
+"Excel-friendly" format. See moddepth_analysis_results_example.csv for sample
+output.
 
 command line usage:
 $ python moddepth_analysis.py dataDir saveDir minTrials subject001 [...]
