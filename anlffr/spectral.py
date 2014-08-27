@@ -218,7 +218,6 @@ def mtphase(x, params, verbose=None):
       params['nfft'] - length of FFT used for calculations (default: next
         power of 2 greater than length of time dimension)
 
-
     verbose : bool, str, int, or None
         The verbosity of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL.
@@ -1191,9 +1190,9 @@ def mtcpca_complete(x, params, verbose = None):
         # Average over tapers and squeeze to pretty shapes        
         cpcaSpectrum = (cspec.mean(axis = 0)).squeeze()
         cpcaPhaseLockingValue = (plv.mean(axis = 0)).squeeze()
-
-        assert cpcaSpectrum.shape == cpcaPhaseLockingValue.shape, (
-                'shape mismatch between PLV and magnitude result arrays')
+        
+        if cpcaSpectrum.shape != cpcaPhaseLockingValue.shape:
+            logger.error('shape mismatch between PLV and magnitude result arrays')
     
         out['mtcpcaSpectrum_' + thisType] = cpcaSpectrum[params['fInd']]
         out['mtcpcaPLV_' + thisType] = cpcaPhaseLockingValue[params['fInd']]
@@ -1202,7 +1201,7 @@ def mtcpca_complete(x, params, verbose = None):
     
     return out 
 
-
+@verbose
 def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None, 
         fpass = None, nPairs = 0, itc = False, 
         threads = 2, nDraws = 100, nPerDraw = 200, 
@@ -1280,27 +1279,31 @@ def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None,
     params = {}
 
     params['Fs'] = int(sampleRate)
-    print '\n sampleRate (Fs) = {} Hz'.format(params['Fs'])
+    logger.info('\n sampleRate (Fs) = {} Hz'.format(params['Fs']))
     params['nfft'] = int(nfft)
-    print 'nfft = {}'.format(params['nfft'])
+    logger.info('nfft = {}'.format(params['nfft']))
     params['tapers'] = list(tapers)
-    print 'Taper TW = {} '.format(params['tapers'][0])
-    print 'Number of tapers = {} '.format(params['tapers'][1])
+    logger.info('Taper TW = {} '.format(params['tapers'][0]))
+    logger.info('Number of tapers = {} '.format(params['tapers'][1]))
     params['fpass'] = list(fpass)
-    print 'fpass = [{}, {}] '.format(params['fpass'][0], params['fpass'][1])
+    logger.info('fpass = [{}, {}] '.format(params['fpass'][0], params['fpass'][1]))
     params['nPairs'] = int(nPairs)
-    print 'nPairs = {}'.format(params['nPairs'])
+    logger.info('nPairs = {}'.format(params['nPairs']))
     params['itc'] = bool(itc)
-    print 'itc = {}'.format(params['itc'])
+    logger.info('itc = {}'.format(params['itc']))
     params['threads'] = int(threads)
-    print 'threads = {}'.format(params['threads'])
+    logger.info('threads = {}'.format(params['threads']))
     params['nDraws'] = int(nDraws)
-    print 'nDraws = {}'.format(params['nDraws'])
+    logger.info('nDraws = {}'.format(params['nDraws']))
     params['nPerDraw'] = int(nPerDraw)
-    print 'nPerDraw = {}'.format(params['nPerDraw'])
-    params['noiseFloorType'] = noiseFloorType 
-    print 'noiseFloorType = {}'.format(params['noiseFloorType'])
+    logger.info('nPerDraw = {}'.format(params['nPerDraw']))
+    params['noiseFloorType'] = noiseFloorType
+    logger.info('noiseFloorType = {}'.format(params['noiseFloorType']))
     params['debugMode'] = debugMode
+    logger.info('debugMode = {}'.format(params['debugMode']))
+    params['returnIndividualBootstrapResults'] = returnIndividualBootstrapResults
+    logger.info('returnIndividualBootstrapResults = {}'.format(params['returnIndividualBootstrapResults']))
+
     print 'debugMode = {}'.format(params['debugMode'])
     params['returnIndividualBootstrapResults'] = returnIndividualBootstrapResults 
     print 'returnIndividualBootstrapResults = {}'.format(params['returnIndividualBootstrapResults'])
@@ -1309,6 +1312,7 @@ def generate_parameters(sampleRate = 4096, nfft = 4096, tapers = None,
 
     return params
 
+@verbose
 def _validate_parameters(params):
 
     if 'function_params_validated' not in params or params['function_params_validated'] == False:

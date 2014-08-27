@@ -9,7 +9,9 @@ import numpy as np
 import time
 import multiprocessing
 import errno
+from .utils import logger, verbose
 
+@verbose
 def bootfunc(inputFunction, x, params, verbose = None):
     """
     Performs bootstrapping over trials for spectral functions, utilizing
@@ -69,7 +71,7 @@ def bootfunc(inputFunction, x, params, verbose = None):
     scipy 0.13.3, nitime 0.5. Code should be platform independent if
     dependencies are satistied, but no effort has gone into checking.
 
-    Last updated: 7/30/2014
+    Last updated: 08/26/2014
     Auditory Neuroscience Laboratory, Boston University
     Contact: lennyv@bu.edu
     """
@@ -81,7 +83,7 @@ def bootfunc(inputFunction, x, params, verbose = None):
     results = {}
     output = {}
 
-    print('Using {} threads...'.format(params['threads']))
+    logger.info('Using {} threads...'.format(params['threads']))
 
     # split the loads roughly equally:
     drawSplit = _compute_thread_split(params)
@@ -89,7 +91,7 @@ def bootfunc(inputFunction, x, params, verbose = None):
     processList = []
     for proc in range(params['threads']):
         if ('debugMode' in params) and (params['debugMode']):
-            print('setting fixed random seeds!')
+            logger.info('setting fixed random seeds!')
             randomState = np.random.RandomState(proc)
         else:
             randomState = np.random.RandomState(None)
@@ -143,7 +145,7 @@ def bootfunc(inputFunction, x, params, verbose = None):
     if 'f' in params:
         output['f'] = np.array(params['f'])
     
-    print('Completed in: {} s'.format(time.time() - startTime))
+    logger.info('Completed in: {} s'.format(time.time() - startTime))
 
     return output
 
@@ -200,10 +202,10 @@ def _combine_random_trials(inputData, nPerDraw, randomState = None):
     tempData = []
     pickTrials = []
 
-    print('\n\nChoosing trials...\n\n ')
+    logger.info('\n\nChoosing trials...\n\n ')
     for pool in range(numPools):
         if useTrialsPerPool > inputData[pool].shape[1]:
-            print(warnString.format(pool))
+            logger.warning(warnString.format(pool))
 
         pickTrials.append(randomState.randint(0,inputData[pool].shape[1],useTrialsPerPool))
         tempData.append(inputData[pool][:,pickTrials[-1],:])
