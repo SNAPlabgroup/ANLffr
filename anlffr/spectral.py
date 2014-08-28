@@ -10,6 +10,7 @@ from math import ceil
 import scipy as sci
 from scipy import linalg
 from .utils import logger
+from .utils import deprecated
 # stops warnings about scope redefinition
 from .utils import verbose as verbose_decorator
 
@@ -546,11 +547,11 @@ def mtcpca_timeDomain(x, params, verbose=None):
     return out
 
 
+@deprecated('Please use the anlffr.bootstrap module for all bootstrap '
+            'functions. bootfunc() will be removed in future releases')
 @verbose_decorator
 def bootfunc(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
     """Run spectral functions with bootstrapping over trials
-
-    DEPRECATION WARNING: recommend use of anlffr.bootstrap module
 
     Parameters
     ----------
@@ -666,6 +667,8 @@ def bootfunc(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
         return (mu_func, v_func, f)
 
 
+@deprecated('Please use the anlffr.bootstrap module for all bootstrap '
+            'functions. indivboot() will be removed in future releases')
 @verbose_decorator
 def indivboot(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
     """Run spectral functions with bootstrapping over trials
