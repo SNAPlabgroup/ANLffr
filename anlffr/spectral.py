@@ -9,10 +9,12 @@ import numpy as np
 from math import ceil
 import scipy as sci
 from scipy import linalg
-from .utils import logger, verbose
+from .utils import logger
+# stops warnings about scope redefinition
+from .utils import verbose as verbose_decorator
 
 
-@verbose
+@verbose_decorator
 def mtplv(x, params, verbose=None):
     """Multitaper Phase-Locking Value
 
@@ -39,10 +41,9 @@ def mtplv(x, params, verbose=None):
 
     Returns
     -------
-    (plvtap, f): Tuple
-        plvtap - Multitapered phase-locking estimate (channel x frequency)
+    Dictionary with the following keys:
+      'mtplv' - Multitapered phase-locking estimate (channel x frequency)
 
-        f - Frequency vector matching plvtap
     """
 
     logger.info('Running Multitaper PLV Estimation')
@@ -63,13 +64,14 @@ def mtplv(x, params, verbose=None):
     else:
         logger.error('Sorry, The data should be a 2 or 3 dimensional array')
 
+    _validate_parameters(params)
+
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
-    Fs = params['Fs']
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -78,7 +80,6 @@ def mtplv(x, params, verbose=None):
             logger.error(
                 'nfft really should be greater than number of time points.')
 
-    f = np.arange(0.0, nfft, 1.0) * Fs / nfft
     plvtap = np.zeros((ntaps, nchans, nfft))
 
     for k, tap in enumerate(w):
@@ -92,13 +93,15 @@ def mtplv(x, params, verbose=None):
                                ((abs(xw) ** 2).mean(axis=trialdim)))
 
     plvtap = plvtap.mean(axis=0).squeeze()
-    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
-    plvtap = plvtap[:, ind]
-    f = f[ind]
-    return (plvtap, f)
+    plvtap = plvtap[:, params['fInd']]
+
+    out = {}
+    out['mtplv'] = plvtap
+
+    return out
 
 
-@verbose
+@verbose_decorator
 def mtspec(x, params, verbose=None):
     """Multitaper Spectrum and SNR estimate
 
@@ -126,12 +129,11 @@ def mtspec(x, params, verbose=None):
 
     Returns
     -------
-    (S, N ,f): Tuple
-        S - Multitapered spectrum (channel x frequency)
+    Dictionary with the following keys:
+      'mtspec' - Multitapered spectrum (channel x frequency)
 
-        N - Noise floor estimate
+      'mtspec_noise' - Noise floor estimate
 
-        f - Frequency vector matching S and N
     """
 
     logger.info('Running Multitaper Spectrum and Noise-floor Estimation')
@@ -152,13 +154,14 @@ def mtspec(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
 
+    _validate_parameters(params)
+
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the results
-    Fs = params['Fs']
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -167,7 +170,6 @@ def mtspec(x, params, verbose=None):
             logger.error(
                 'nfft really should be greater than number of time points.')
 
-    f = np.arange(0.0, nfft, 1.0) * Fs / nfft
     S = np.zeros((ntaps, nchans, nfft))
     N = np.zeros((ntaps, nchans, nfft))
 
@@ -188,14 +190,17 @@ def mtspec(x, params, verbose=None):
     # Average over tapers and squeeze to pretty shapes
     S = S.mean(axis=0).squeeze()
     N = N.mean(axis=0).squeeze()
-    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
-    S = S[:, ind]
-    N = N[:, ind]
-    f = f[ind]
-    return (S, N, f)
+    S = S[:, params['fInd']]
+    N = N[:, params['fInd']]
+
+    out = {}
+    out['mtspec'] = S
+    out['mtspec_noise'] = N
+
+    return out
 
 
-@verbose
+@verbose_decorator
 def mtphase(x, params, verbose=None):
     """Multitaper phase estimation
 
@@ -214,17 +219,15 @@ def mtphase(x, params, verbose=None):
       params['nfft'] - length of FFT used for calculations (default: next
         power of 2 greater than length of time dimension)
 
-
     verbose : bool, str, int, or None
         The verbosity of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL.
 
     Returns
     -------
-    (Ph ,f): Tuple
-        Ph - Multitapered phase spectrum (channel x frequency)
+    Dictionary with the following keys:
+      'Ph' - Multitapered phase spectrum (channel x frequency)
 
-        f - Frequency vector matching S and N
     """
 
     logger.info('Running Multitaper Spectrum and Noise-floor Estimation')
@@ -245,37 +248,39 @@ def mtphase(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
 
+    _validate_parameters(params)
+
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the results
-    Fs = params['Fs']
     if 'nfft' not in params:
-        nfft = int(2**ceil(sci.log2(x.shape[timedim])))
+        nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
         nfft = int(params['nfft'])
         if nfft < x.shape[timedim]:
             logger.error('nfft really should be greater '
                          'than number of time points.')
 
-    f = np.arange(0.0, nfft, 1.0)*Fs/nfft
     Ph = np.zeros((ntaps, nchans, nfft))
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = sci.fft(tap*x, n=nfft, axis=timedim)
+        xw = sci.fft(tap * x, n=nfft, axis=timedim)
         Ph[k, :, :] = np.angle(xw.mean(axis=trialdim))
 
     # Average over tapers and squeeze to pretty shapes
-    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
-    Ph = Ph[:, :, ind].mean(axis=0).squeeze()
-    f = f[ind]
-    return (Ph, f)
+    Ph = Ph[:, :, params['fInd']].mean(axis=0).squeeze()
+
+    out = {}
+    out['mtphase'] = Ph
+
+    return out
 
 
-@verbose
+@verbose_decorator
 def mtcpca(x, params, verbose=None):
     """Multitaper complex PCA and PLV
 
@@ -302,10 +307,9 @@ def mtcpca(x, params, verbose=None):
 
     Returns
     -------
-    Tuple (plv, f):
-        plv - Multitapered PLV estimate using cPCA
+    Dictionary with the following keys:
+      'mtcplv' - Multitapered PLV estimate using cPCA
 
-        f - Frequency vector matching plv
     """
 
     logger.info('Running Multitaper Complex PCA based PLV Estimation')
@@ -319,13 +323,14 @@ def mtcpca(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 3 dimensional array!')
 
+    _validate_parameters(params)
+
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
-    Fs = params['Fs']
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -334,7 +339,6 @@ def mtcpca(x, params, verbose=None):
             logger.error(
                 'nfft really should be greater than number of time points.')
 
-    f = np.arange(0.0, nfft, 1.0) * Fs / nfft
     plv = np.zeros((ntaps, nfft))
 
     for k, tap in enumerate(w):
@@ -348,13 +352,15 @@ def mtcpca(x, params, verbose=None):
 
     # Average over tapers and squeeze to pretty shapes
     plv = (plv.mean(axis=0)).squeeze()
-    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
-    plv = plv[ind]
-    f = f[ind]
-    return (plv, f)
+    plv = plv[params['fInd']]
+
+    out = {}
+    out['mtcplv'] = plv
+
+    return out
 
 
-@verbose
+@verbose_decorator
 def mtcspec(x, params, verbose=None):
     """Multitaper complex PCA and power spectral estimate
 
@@ -382,9 +388,8 @@ def mtcspec(x, params, verbose=None):
     Returns
     -------
     Tuple (cspec, f):
-        cspec - Multitapered PLV estimate using cPCA
+      'mtcspec' - Multitapered PLV estimate using cPCA
 
-        f - Frequency vector matching plv
     """
 
     logger.info('Running Multitaper Complex PCA based power estimation!')
@@ -398,13 +403,14 @@ def mtcspec(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 3 dimensional array!')
 
+    _validate_parameters(params)
+
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
-    Fs = params['Fs']
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -413,7 +419,6 @@ def mtcspec(x, params, verbose=None):
             logger.error(
                 'nfft really should be greater than number of time points.')
 
-    f = np.arange(0.0, nfft, 1.0) * Fs / nfft
     cspec = np.zeros((ntaps, nfft))
 
     for k, tap in enumerate(w):
@@ -427,13 +432,15 @@ def mtcspec(x, params, verbose=None):
 
     # Average over tapers and squeeze to pretty shapes
     cspec = (cspec.mean(axis=0)).squeeze()
-    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
-    cspec = cspec[ind]
-    f = f[ind]
-    return (cspec, f)
+    cspec = cspec[params['fInd']]
+
+    out = {}
+    out['mtcspec'] = cspec
+
+    return out
 
 
-@verbose
+@verbose_decorator
 def mtcpca_timeDomain(x, params, verbose=None):
     """Multitaper complex PCA and regular time-domain PCA and return time
     domain waveforms.
@@ -453,7 +460,7 @@ def mtcpca_timeDomain(x, params, verbose=None):
     domain leads to funny cancellations.
 
     Also, for transient features, simple time-domain PCA is likely
-    to perform better as the cPCA smoothes out  transient features. Thus
+    to perform better as the cPCA smoothes out transient features. Thus
     both regular time-domain PCA and cPCA outputs are returned.
 
     Note that for sign of the output is indeterminate (you may need to flip
@@ -476,8 +483,10 @@ def mtcpca_timeDomain(x, params, verbose=None):
 
     Returns
     -------
-    y_cpc - Multitapered cPCA estimate of time-domain waveform
-    y_pc - Regular time-domain PCA
+    Dictionary with the following keys:
+      'y_cpc' - Multitapered cPCA estimate of time-domain waveform
+
+      'y_pc' - Regular time-domain PCA
 
     """
 
@@ -491,6 +500,8 @@ def mtcpca_timeDomain(x, params, verbose=None):
                     nchans, ntrials)
     else:
         logger.error('Sorry! The data should be a 3 dimensional array!')
+
+    _validate_parameters(params)
 
     # Calculate the tapers
     w, conc = alg.dpss_windows(x.shape[timedim], 1, 1)
@@ -515,10 +526,10 @@ def mtcpca_timeDomain(x, params, verbose=None):
         vals, vecs = linalg.eigh(Csd, eigvals_only=False)
         cspec[fi] = vals[-1]
         cwts = vecs[:, -1] / (np.abs(vecs[:, -1]).sum())
-        cpc_freq[fi] = (cwts.conjugate()*C[:, fi]).sum()
+        cpc_freq[fi] = (cwts.conjugate() * C[:, fi]).sum()
 
     # Filter through spectrum, do ifft.
-    cscale = cspec**0.5
+    cscale = cspec ** 0.5
     cscale = cscale / cscale.max()  # Maxgain of filter = 1
     y_cpc = sci.ifft(cpc_freq * cscale)[:x.shape[timedim]]
 
@@ -528,12 +539,18 @@ def mtcpca_timeDomain(x, params, verbose=None):
     vals, vecs = linalg.eigh(C_td, eigvals_only=False)
     y_pc = np.dot(vecs[:, -1].T, x_ave) / (vecs[:, -1].sum())
 
-    return (y_cpc, y_pc)
+    out = {}
+    out['y_cpc'] = y_cpc
+    out['y_pc'] = y_pc
+
+    return out
 
 
-@verbose
+@verbose_decorator
 def bootfunc(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
     """Run spectral functions with bootstrapping over trials
+
+    DEPRECATION WARNING: recommend use of anlffr.bootstrap module
 
     Parameters
     ----------
@@ -649,10 +666,12 @@ def bootfunc(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
         return (mu_func, v_func, f)
 
 
-@verbose
+@verbose_decorator
 def indivboot(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
     """Run spectral functions with bootstrapping over trials
     This also returns individual draw results, unlike bootfunc()
+
+    DEPRECATION WARNING: recommend use of anlffr.bootstrap module
 
     Parameters
     ----------
@@ -732,10 +751,12 @@ def indivboot(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
 
         if(func == 'spec'):
             if(nchans > 1):
-                (S[:, :, drawnum], N[:, :, drawnum], f) = mtspec(xdraw, params,
+                (S[:, :, drawnum], N[:, :, drawnum], f) = mtspec(xdraw,
+                                                                 params,
                                                                  verbose=False)
             else:
-                (S[:, drawnum], N[:, drawnum], f) = mtspec(xdraw, params,
+                (S[:, drawnum], N[:, drawnum], f) = mtspec(xdraw,
+                                                           params,
                                                            verbose=False)
 
         elif(func == 'cpca'):
@@ -772,7 +793,7 @@ def indivboot(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
         return (plv, f)
 
 
-@verbose
+@verbose_decorator
 def mtppc(x, params, verbose=None):
     """Multitaper Pairwise Phase Consisttency
 
@@ -780,6 +801,7 @@ def mtppc(x, params, verbose=None):
     ----------
     x - Numpy array
         Input data (channel x trial x time) or (trials x time)
+
     params - Dictionary of parameter settings
       params['Fs'] - sampling rate
 
@@ -787,23 +809,22 @@ def mtppc(x, params, verbose=None):
 
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
 
-
       params['nfft'] - length of FFT used for calculations (default: next
         power of 2 greater than length of time dimension)
 
       params['Npairs'] - Number of pairs for PPC analysis
 
       params['itc'] - If True, normalize after mean like ITC instead of PLV
+
     verbose : bool, str, int, or None
         The verbosity of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL.
 
     Returns
     -------
-    (ppc, f): Tuple
-        ppc - Multitapered PPC estimate (channel x frequency)
+    Dictionary with the following keys:
+      'mtppc' - Multitapered PPC estimate (channel x frequency)
 
-        f - Frequency vector matching ppc
     """
 
     logger.info('Running Multitaper Pairwise Phase Consistency Estimate')
@@ -824,13 +845,14 @@ def mtppc(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
 
+    _validate_parameters(params)
+
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
-    Fs = params['Fs']
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -839,14 +861,13 @@ def mtppc(x, params, verbose=None):
             logger.error(
                 'nfft really should be greater than number of time points.')
 
-    f = np.arange(0.0, nfft, 1.0) * Fs / nfft
     ppc = np.zeros((ntaps, nchans, nfft))
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
         xw = sci.fft(tap * x, n=nfft, axis=timedim)
 
-        npairs = params['Npairs']
+        npairs = params['nPairs']
         trial_pairs = np.random.randint(0, ntrials, (npairs, 2))
 
         if(nchans == 1):
@@ -879,13 +900,15 @@ def mtppc(x, params, verbose=None):
                                  abs(xw_2).mean(trialdim)))
 
     ppc = ppc.mean(axis=0).squeeze()
-    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
-    ppc = ppc[:, ind]
-    f = f[ind]
-    return (ppc, f)
+    ppc = ppc[:, params['fInd']]
+
+    out = {}
+    out['mtppc'] = ppc
+
+    return out
 
 
-@verbose
+@verbose_decorator
 def mtspecraw(x, params, verbose=None):
     """Multitaper Spectrum (of raw signal)
 
@@ -893,6 +916,7 @@ def mtspecraw(x, params, verbose=None):
     ----------
     x - Numpy array
         Input data numpy array (channel x trial x time) or (trials x time)
+
     params - Dictionary of parameter settings
       params['Fs'] - sampling rate
 
@@ -909,10 +933,9 @@ def mtspecraw(x, params, verbose=None):
 
     Returns
     -------
-    (Sraw, f): Tuple
-        Sraw - Multitapered spectrum (channel x frequency)
+    Dictionary with the following keys:
+      'mtspecraw' - Multitapered spectrum (channel x frequency)
 
-        f - Frequency vector matching Sraw
     """
 
     logger.info('Running Multitaper Raw Spectrum Estimation')
@@ -934,13 +957,14 @@ def mtspecraw(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
 
+    _validate_parameters(params)
+
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the results
-    Fs = params['Fs']
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -949,7 +973,6 @@ def mtspecraw(x, params, verbose=None):
             logger.error(
                 'nfft really should be greater than number of time points.')
 
-    f = np.arange(0.0, nfft, 1.0) * Fs / nfft
     Sraw = np.zeros((ntaps, nchans, nfft))
 
     for k, tap in enumerate(w):
@@ -959,13 +982,15 @@ def mtspecraw(x, params, verbose=None):
 
     # Average over tapers and squeeze to pretty shapes
     Sraw = Sraw.mean(axis=0).squeeze()
-    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
-    Sraw = Sraw[:, ind]
-    f = f[ind]
-    return (Sraw, f)
+    Sraw = Sraw[:, params['fInd']]
+
+    out = {}
+    out['mtspecraw'] = Sraw
+
+    return out
 
 
-@verbose
+@verbose_decorator
 def mtpspec(x, params, verbose=None):
     """Multitaper Pairwise Power Spectral estimate
 
@@ -990,10 +1015,9 @@ def mtpspec(x, params, verbose=None):
 
     Returns
     -------
-    (pspec, f): Tuple
-        pspec - Multitapered Pairwise Power estimate (channel x frequency)
+    Dictionary with following keys:
+      'pspec' -  Multitapered Pairwise Power estimate (channel x frequency)
 
-        f - Frequency vector matching ppc
     """
     logger.info('Running Multitaper Pairwise Power Estimate')
 
@@ -1014,13 +1038,15 @@ def mtpspec(x, params, verbose=None):
     else:
         logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
 
+    _validate_parameters(params)
+
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
-    Fs = params['Fs']
+
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -1029,7 +1055,6 @@ def mtpspec(x, params, verbose=None):
             logger.error(
                 'nfft really should be greater than number of time points.')
 
-    f = np.arange(0.0, nfft, 1.0) * Fs / nfft
     pspec = np.zeros((ntaps, nchans, nfft))
 
     for ch in np.arange(0, nchans):
@@ -1052,8 +1077,324 @@ def mtpspec(x, params, verbose=None):
                 pspec[k, ch, :] = np.real((xw_1*xw_2.conj()).mean(axis=0))
 
     pspec = pspec.mean(axis=0).squeeze()
-    ind = (f > params['fpass'][0]) & (f < params['fpass'][1])
-    pspec = pspec[:, ind]
+    pspec = pspec[:, params['fInd']]
 
-    f = f[ind]
-    return (pspec, f)
+    out = {}
+    out['pspec'] = pspec
+
+    return out
+
+
+@verbose_decorator
+def mtcpca_complete(x, params, verbose=True):
+    """Gets power spectra and plv using multitaper with complex PCA applied.
+
+    Parameters
+    ----------
+    x - NumPy Array
+        Input data (channel x trial x time)
+
+    params - dictionary. Must contain the following fields:
+      params['Fs'] - sampling rate
+
+      params['tapers'] - [TW, Number of tapers]
+
+      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+
+      params['nfft'] - length of FFT used for calculations
+
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
+
+    Returns
+    -------
+    dictionary with keys:
+         mtcpcaSpectrum_* - Multitapered power spectral estimate using cPCA
+
+         mtcpcaPLV_*- Multitapered PLV using cPCA
+
+         mtcpcaSpectrumEigenvalues_* - Eigenvalues from cpca on spectrum (taper
+         x frequency)
+
+         mtcpcaPLVEigenvalues_* - Eigenvalues from cpca on PLV (taper x
+         frequency)
+
+     where * in the above is one or more of the noise floor types specified
+     or 'normalPhase'
+    """
+    _validate_parameters(params)
+
+    out = {}
+
+    logger.info('Running Multitaper Complex PCA based power estimation!')
+    if len(x.shape) == 3:
+        timedim = 2
+        trialdim = 1
+        ntrials = x.shape[trialdim]
+        nchans = x.shape[0]
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
+    else:
+        logger.error('Sorry! The data should be a 3 dimensional array!')
+
+    # Calculate the tapers
+    nfft = params['nfft']
+    ntaps = params['tapers'][1]
+    TW = params['tapers'][0]
+    w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
+
+    plv = np.zeros((ntaps, nfft))
+    cspec = np.zeros((ntaps, nfft))
+
+    phaseTypes = list(params['noiseFloorType'])
+    phaseTypes.append('normalPhase')
+
+    for thisType in phaseTypes:
+        if thisType == 'phaseFlipHalfTrials':
+            # flip half the trials
+            phaseShifter = np.ones(x.shape)
+            permutedTrialOrder = np.random.permutation(range(x.shape[1]))
+            flipTheseTrials = permutedTrialOrder[0:int(x.shape[1] / 2)]
+            phaseShifter[:, flipTheseTrials, :] = -1.0
+        elif thisType == 'normalPhase':
+            phaseShifter = 1.0
+        else:
+            logger.error('unrecognized selection for trial phase type')
+
+        useData = x * phaseShifter
+
+        for k, tap in enumerate(w):
+            logger.info(thisType + 'Doing Taper #%d', k)
+
+            xw = sci.fft((tap * useData), n=nfft, axis=timedim)
+
+            # power spectrum
+            C = (xw.mean(axis=trialdim)).squeeze()
+            # phase locking value
+            plvC = (xw.mean(axis=trialdim) /
+                    (abs(xw).mean(axis=trialdim))).squeeze()
+
+            for fi in np.arange(0, nfft):
+                powerCsd = np.outer(C[:, fi], C[:, fi].conj())
+                powerEigenvals = linalg.eigh(powerCsd, eigvals_only=True)
+                cspec[k, fi] = powerEigenvals[-1] / nchans
+
+                plvCsd = np.outer(plvC[:, fi], plvC[:, fi].conj())
+                plvEigenvals = linalg.eigh(plvCsd, eigvals_only=True)
+                plv[k, fi] = plvEigenvals[-1] / nchans
+
+        # Average over tapers and squeeze to pretty shapes
+        cpcaSpectrum = (cspec.mean(axis=0)).squeeze()
+        cpcaPhaseLockingValue = (plv.mean(axis=0)).squeeze()
+
+        if cpcaSpectrum.shape != cpcaPhaseLockingValue.shape:
+            logger.error(
+                'shape mismatch between PLV and magnitude result arrays')
+
+        out['mtcpcaSpectrum_' + thisType] = cpcaSpectrum[params['fInd']]
+        out['mtcpcaPLV_' + thisType] = cpcaPhaseLockingValue[params['fInd']]
+        out['mtcpcaSpectrumEigenvalues_' + thisType] = cspec[:, params['fInd']]
+        out['mtcpcaPLVEigenvalues_' + thisType] = plv[:, params['fInd']]
+
+    return out
+
+
+@verbose_decorator
+def generate_parameters(
+        sampleRate=4096,
+        nfft=4096,
+        tapers=None,
+        fpass=None,
+        nPairs=0,
+        itc=False,
+        threads=2,
+        nDraws=100,
+        nPerDraw=200,
+        returnIndividualBootstrapResults=False,
+        noiseFloorType=None,
+        debugMode=False,
+        verbose=True):
+    """
+    Generates some default parameter values.
+
+    Inputs
+    ----------
+    sampleRate - sample rate (default: 4096)
+
+    nfft - fft length (default: 4096)
+
+    tapers - list of [TW, number of tapers] (default: [2,3])
+
+    fpass - list of [f_low, f_high] (default: [70.0, 1000.0]
+
+    npairs - number of trial pairs for pairwise analysis (default: 0)
+
+    itc - whether to compute ITC (default: False)
+
+    threads - number of threads to spawn for multiprocess
+    bootstrap (default: 1)
+
+    nDraw - number total draws of data for multiprocess bootstrap
+    (default: 100)
+
+    nPerDraw - number of trials to use per draw of data for multiprocess
+    bootstrap (default: 200)
+
+    returnIndividualBootstrapResults - whether to return the individual draw
+    results when running bootstrapped calculations (default: False)
+
+    noiseFloorType - a list or string type of noise floor assumption(s) to use.
+        valid choices are:
+        'phaseFlipHalfTrials'
+
+        can be equivalently specified using a list of strings or a string
+        separated with whitespace. e.g.:
+        ['phaseFlipHalfTrials']
+        or
+        noiseFloorType = 'phaseFlipHalfTrials randomPhaseAcrossTrials'
+
+    debugMode - flag to set debugging on (to fix random seeds)
+
+    Returns
+    ---------
+    Dictionary with reasonable example/default values for params.
+
+    Note: this will create a frequency axis based on the inputs to
+    nfft and Fs, as well as based on fpass. There will also be a key
+    containing the logical indexes needed so that the functions in
+    this module truncate their output to match the frequency vector.
+
+    I should really switch this to some kind of kwarg function...
+    """
+
+    # define this here because apparently a list is a "dangerous"
+    # default argument as per PyLint
+    if tapers is None:
+        tapers = [2, 3]
+
+    if fpass is None:
+        fpass = [70.0, 1000.0]
+
+    # removes whitespace characters and converts to list
+    if isinstance(noiseFloorType, str):
+        noiseFloorType = noiseFloorType.split()
+
+    if noiseFloorType is None:
+        noiseFloorType = ['phaseFlipHalfTrials']
+
+    params = {}
+
+    params['Fs'] = int(sampleRate)
+    params['nfft'] = int(nfft)
+    params['tapers'] = list(tapers)
+    params['fpass'] = list(fpass)
+    params['nPairs'] = int(nPairs)
+    params['itc'] = bool(itc)
+    params['threads'] = int(threads)
+    params['nDraws'] = int(nDraws)
+    params['nPerDraw'] = int(nPerDraw)
+    params['noiseFloorType'] = noiseFloorType
+    params['debugMode'] = debugMode
+    params['returnIndividualBootstrapResults'] = (
+        returnIndividualBootstrapResults)
+
+    logger.info('\n sampleRate (Fs) = {} Hz'.format(params['Fs']))
+    logger.info('nfft = {}'.format(params['nfft']))
+    logger.info('Taper TW = {} '.format(params['tapers'][0]))
+    logger.info('Number of tapers = {} '.format(params['tapers'][1]))
+    logger.info('fpass = [{}, {}] '.format(params['fpass'][0],
+                                           params['fpass'][1]))
+    logger.info('nPairs = {}'.format(params['nPairs']))
+    logger.info('itc = {}'.format(params['itc']))
+    logger.info('threads = {}'.format(params['threads']))
+    logger.info('nDraws = {}'.format(params['nDraws']))
+    logger.info('nPerDraw = {}'.format(params['nPerDraw']))
+    logger.info('noiseFloorType = {}'.format(params['noiseFloorType']))
+    logger.info('debugMode = {}'.format(params['debugMode']))
+    logger.info('returnIndividualBootstrapResults = {}'.format(
+        params['returnIndividualBootstrapResults']))
+
+    _validate_parameters(params)
+
+    return params
+
+
+@verbose_decorator
+def _validate_parameters(params, verbose=True):
+    '''
+    internal function to validate parameters
+    '''
+
+    notValidated = (('function_params_validated' not in params) or
+                    (params['function_params_validated'] is False))
+
+    if notValidated:
+
+        if 'Fs' not in params:
+            logger.error('params[''Fs''] must be specified')
+        if 'nfft' not in params:
+            logger.error('params[''nfft''] must be specified')
+        if 'tapers' not in params:
+            logger.error('params[''tapers''] must be specified')
+
+        # check/fix taper input
+        if len(params['tapers']) != 2:
+            logger.error('params[''tapers''] must be a list/tuple of '
+                         'form [TW,taps]')
+        if params['tapers'][0] <= 0:
+            logger.error('params[''tapers''][0] (TW) must be positive')
+
+        if int(params['tapers'][1]) <= 0:
+            logger.error('params[''tapers''][1] (ntaps) must be a ' +
+                         'positive integer')
+
+        if 'noiseFloorType' in params:
+            if not isinstance(params['noiseFloorType'], list):
+                logger.error('noiseFloorType should be a list')
+
+            validNoiseFloors = ['phaseFlipHalfTrials']
+
+            for k in params['noiseFloorType']:
+                if k not in validNoiseFloors:
+                    logger.error('unrecognized input for noiseFloorType')
+
+        if 'fpass' in params:
+            if 2 != len(params['fpass']):
+                logger.error('fpass must have two values')
+
+            if params['fpass'][0] < 0:
+                logger.error('params[''fpass[0]''] should be >= 0')
+
+            if params['Fs'] / 2.0 < params['fpass'][1]:
+                logger.error('params[''fpass''][1] should be <= ' +
+                             'params[''Fs'']/2')
+
+            if params['fpass'][0] >= params['fpass'][1]:
+                logger.error('params[''fpass''][0] should be < ' +
+                             'params[''fpass''][1]')
+        else:
+            logger.info('Using default params[''fpass''] of ' +
+                        '[0, params[''Fs'']/2]')
+            params['fpass'] = [0.0, params['Fs'] / 2.0]
+
+        # take care of frequency stuff
+        if 'f' not in params:
+            if 'fInd' in params:
+                logger.error('f is not specified, but fInd is...' +
+                             'something is wrong')
+
+            params['f'] = (np.arange(0.0, params['nfft'], 1.0) *
+                           params['Fs'] / params['nfft'])
+
+            if 'fpass' in params:
+                params['fInd'] = ((params['f'] >= params['fpass'][0]) &
+                                  (params['f'] <= params['fpass'][1]))
+            else:
+                params['fInd'] = range(params['f'].shape[0])
+
+            params['f'] = params['f'][params['fInd']]
+
+        params['function_params_validated'] = True
+
+    return params
