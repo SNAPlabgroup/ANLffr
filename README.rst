@@ -26,7 +26,7 @@ To get the latest code using git, simply type::
     git clone git://github.com/haribharadwaj/ANLffr.git
 
 If you don't have git installed, you can download a zip or tarball
-of the latest code: https://github.com/haribharadwaj/ANLffr/archive/master.zip
+of the latest code: https://github.com/haribharadwaj/ANLffr/archive/v0.1.0.zip
 
 If you have pip, you may be able to download and install anlffr in one step using (and hence skip the "Install anlffr" steps below)::
 
