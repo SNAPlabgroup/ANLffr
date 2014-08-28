@@ -72,7 +72,6 @@ def mtplv(x, params, verbose=None):
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
-    Fs = params['Fs']
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -163,7 +162,6 @@ def mtspec(x, params, verbose=None):
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the results
-    Fs = params['Fs']
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -258,7 +256,6 @@ def mtphase(x, params, verbose=None):
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the results
-    Fs = params['Fs']
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -334,7 +331,6 @@ def mtcpca(x, params, verbose=None):
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
-    Fs = params['Fs']
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -415,7 +411,6 @@ def mtcspec(x, params, verbose=None):
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
-    Fs = params['Fs']
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -858,7 +853,6 @@ def mtppc(x, params, verbose=None):
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
-    Fs = params['Fs']
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -971,7 +965,6 @@ def mtspecraw(x, params, verbose=None):
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the results
-    Fs = params['Fs']
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
@@ -980,7 +973,6 @@ def mtspecraw(x, params, verbose=None):
             logger.error(
                 'nfft really should be greater than number of time points.')
 
-    f = np.arange(0.0, nfft, 1.0) * Fs / nfft
     Sraw = np.zeros((ntaps, nchans, nfft))
 
     for k, tap in enumerate(w):
@@ -1054,7 +1046,7 @@ def mtpspec(x, params, verbose=None):
     w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
-    Fs = params['Fs']
+
     if 'nfft' not in params:
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
