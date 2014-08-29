@@ -73,18 +73,12 @@ def mtplv(x, params, verbose=None, bootstrapMode=False):
     _validate_parameters(params)
 
     # Calculate the tapers
+    nfft = _get_nfft(x, params, timedim)
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
-    if 'nfft' not in params:
-        nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
-    else:
-        nfft = int(params['nfft'])
-        if nfft < x.shape[timedim]:
-            logger.error(
-                'nfft really should be greater than number of time points.')
 
     plvtap = np.zeros((ntaps, nchans, nfft))
 
@@ -176,18 +170,10 @@ def mtspec(x, params, verbose=None, bootstrapMode=False):
     _validate_parameters(params)
 
     # Calculate the tapers
+    nfft = _get_nfft(x, params, timedim)
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
-
-    # Make space for the results
-    if 'nfft' not in params:
-        nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
-    else:
-        nfft = int(params['nfft'])
-        if nfft < x.shape[timedim]:
-            logger.error(
-                'nfft really should be greater than number of time points.')
 
     S = np.zeros((ntaps, nchans, nfft))
     N = np.zeros((ntaps, nchans, nfft))
@@ -245,7 +231,7 @@ def mtphase(x, params, verbose=None, bootstrapMode=False):
         The verbosity of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL.
 
-    Returns: 
+    Returns:
     -------
     In normal mode:
         (Ph, f): Tuple
@@ -281,18 +267,10 @@ def mtphase(x, params, verbose=None, bootstrapMode=False):
     _validate_parameters(params)
 
     # Calculate the tapers
+    nfft = _get_nfft(x, params, timedim)
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
-
-    # Make space for the results
-    if 'nfft' not in params:
-        nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
-    else:
-        nfft = int(params['nfft'])
-        if nfft < x.shape[timedim]:
-            logger.error('nfft really should be greater '
-                         'than number of time points.')
 
     Ph = np.zeros((ntaps, nchans, nfft))
 
@@ -366,18 +344,10 @@ def mtcpca(x, params, verbose=None, bootstrapMode=False):
     _validate_parameters(params)
 
     # Calculate the tapers
+    nfft = _get_nfft(x, params, timedim)
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
-
-    # Make space for the PLV result
-    if 'nfft' not in params:
-        nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
-    else:
-        nfft = int(params['nfft'])
-        if nfft < x.shape[timedim]:
-            logger.error(
-                'nfft really should be greater than number of time points.')
 
     plv = np.zeros((ntaps, nfft))
 
@@ -456,18 +426,12 @@ def mtcspec(x, params, verbose=None, bootstrapMode=False):
     _validate_parameters(params)
 
     # Calculate the tapers
+    nfft = _get_nfft(x, params, timedim)
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
-    if 'nfft' not in params:
-        nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
-    else:
-        nfft = int(params['nfft'])
-        if nfft < x.shape[timedim]:
-            logger.error(
-                'nfft really should be greater than number of time points.')
 
     cspec = np.zeros((ntaps, nfft))
 
@@ -564,11 +528,12 @@ def mtcpca_timeDomain(x, params, verbose=None, bootstrapMode=False):
     _validate_parameters(params)
 
     # Calculate the tapers
+    nfft = _get_nfft(x, params, timedim)
     w, conc = dpss_windows(x.shape[timedim], 1, 1)
     w = w.squeeze() / w.max()
 
     # Make space for the CPCA resutls
-    if 'nfft' not in params:
+    if 'nfft' not in params or params['nfft'] is None::
         nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
     else:
         nfft = int(params['nfft'])
@@ -860,7 +825,7 @@ def indivboot(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
 
 @verbose_decorator
 def mtppc(x, params, verbose=None, bootstrapMode=False):
-    """Multitaper Pairwise Phase Consisttency
+    """Multitaper Pairwise Phase Consistency
 
     Parameters
     ----------
@@ -920,18 +885,12 @@ def mtppc(x, params, verbose=None, bootstrapMode=False):
     _validate_parameters(params)
 
     # Calculate the tapers
+    nfft = _get_nfft(x, params, timedim)
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
-    # Make space for the PLV result
-    if 'nfft' not in params:
-        nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
-    else:
-        nfft = int(params['nfft'])
-        if nfft < x.shape[timedim]:
-            logger.error(
-                'nfft really should be greater than number of time points.')
+    # Make space for the result
 
     ppc = np.zeros((ntaps, nchans, nfft))
 
@@ -1042,18 +1001,12 @@ def mtspecraw(x, params, verbose=None, bootstrapMode=False):
     _validate_parameters(params)
 
     # Calculate the tapers
+    nfft = _get_nfft(x, params, timedim)
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the results
-    if 'nfft' not in params:
-        nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
-    else:
-        nfft = int(params['nfft'])
-        if nfft < x.shape[timedim]:
-            logger.error(
-                'nfft really should be greater than number of time points.')
 
     Sraw = np.zeros((ntaps, nchans, nfft))
 
@@ -1132,19 +1085,12 @@ def mtpspec(x, params, verbose=None, bootstrapMode=False):
     _validate_parameters(params)
 
     # Calculate the tapers
+    nfft = _get_nfft(x, params, timedim)
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
-
-    if 'nfft' not in params:
-        nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
-    else:
-        nfft = int(params['nfft'])
-        if nfft < x.shape[timedim]:
-            logger.error(
-                'nfft really should be greater than number of time points.')
 
     pspec = np.zeros((ntaps, nchans, nfft))
 
@@ -1236,8 +1182,8 @@ def mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
 
     out = {}
 
-    logger.info('Running Multitaper Complex PCA based' +
-                'plv and power estimation!')
+    logger.info('Running Multitaper Complex PCA based ' +
+                'plv and power estimation using identical trials.')
 
     if len(x.shape) == 3:
         timedim = 2
@@ -1250,7 +1196,8 @@ def mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
         logger.error('Sorry! The data should be a 3 dimensional array!')
 
     # Calculate the tapers
-    nfft = params['nfft']
+
+    nfft = _get_nfft(x, params, timedim)
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
@@ -1358,14 +1305,13 @@ def generate_parameters(verbose=True, **kwArgs):
 
     Returns
     ---------
-    Dictionary.
-
+    Dictionary of parameters.
 
     """
 
     params = {}
     params['Fs'] = 4096
-    params['nfft'] = 4096
+    params['nfft'] = None
     params['tapers'] = [2, 3]
     params['fpass'] = [70., 1000.0]
     params['Npairs'] = 0
@@ -1416,12 +1362,14 @@ def generate_parameters(verbose=True, **kwArgs):
             params[kw] = kwArgs[kw]
             logger.info((kw + ' = {}').format(kwArgs[kw]))
 
-
     _validate_parameters(params)
 
     logger.info('debugMode = {}'.format(params['debugMode']))
     logger.info('sampleRate (Fs) = {} Hz'.format(params['Fs']))
-    logger.info('nfft = {}'.format(params['nfft']))
+    if nfft is not None:
+        logger.info('nfft = {}'.format(params['nfft']))
+    else:
+        logger.info('nfft = (next power of 2) > (number time points)')
     logger.info('Number of tapers = {} '.format(params['tapers'][1]))
     logger.info('Taper TW = {} '.format(params['tapers'][0]))
     logger.info('fpass = [{}, {}]'.format(params['fpass'][0],
@@ -1510,3 +1458,21 @@ def _validate_parameters(params, verbose=True):
         params['function_params_validated'] = True
 
     return params
+
+
+@verbose_decorator
+def _get_nfft(x, params, timeDim=2, verbose=None):
+    '''
+    internal function. computes nfft based on x.shape.
+    '''
+    if params['nfft'] < x.shape[timeDim]:
+        badNfft = True
+        logger.warn(
+            'nfft really should be greater than number of time points.\n')
+
+    if 'nfft' not in params or params['nfft'] is None or badNfft:
+        nfft = int(2 ** ceil(sci.log2(x.shape[timeDim])))
+    else:
+        nfft = int(params['nfft'])
+
+    return nfft
