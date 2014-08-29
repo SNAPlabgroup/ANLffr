@@ -56,17 +56,15 @@ saveDir = sys.argv[2]
 minTrials = int(sys.argv[3])
 subjectList = sys.argv[4:]
 
-# use a 2048 point fft, but results will only include freqs between 70-1000 the
-# noise floor is determined by flipping the phase of half of the trials and
-# then recomputing everything
+# use a 2048 point fft, but results will only include freqs between 70-1000
 params = spectral.generate_parameters(sampleRate=5000,
                                       nfft=2048,
                                       fpass=[70.0, 1000.0],
                                       tapers=[2, 3],
                                       noiseFloorType=['phaseFlipHalfTrials'],
-                                      nDraws=100,
+                                      nDraws=60,
                                       nPerDraw=minTrials,
-                                      threads=6,
+                                      threads=12,
                                       returnIndividualBootstrapResults=False)
 
 # cycle through each subject, then conditions 1-3

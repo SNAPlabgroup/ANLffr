@@ -211,7 +211,7 @@ def _multiprocess_wrapper(
         theseData, trialsUsed = _combine_random_trials(inputData,
                                                        params['nPerDraw'],
                                                        randomState)
-        out = (inputFunction(theseData, params, verbose=False), trialsUsed)
+        out = (inputFunction(theseData, params, verbose=False, bootstrapMode = True), trialsUsed)
         resultsQueue.put(out)
 
 
