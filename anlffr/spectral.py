@@ -245,7 +245,7 @@ def mtphase(x, params, verbose=None, bootstrapMode=False):
         The verbosity of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL.
 
-    lRleturne
+    Returns: 
     -------
     In normal mode:
         (Ph, f): Tuple
