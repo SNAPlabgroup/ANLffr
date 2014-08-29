@@ -64,7 +64,7 @@ params = spectral.generate_parameters(sampleRate=5000,
                                       noiseFloorType=['phaseFlipHalfTrials'],
                                       nDraws=60,
                                       nPerDraw=minTrials,
-                                      threads=12,
+                                      threads=4,
                                       returnIndividualBootstrapResults=False)
 
 # cycle through each subject, then conditions 1-3
