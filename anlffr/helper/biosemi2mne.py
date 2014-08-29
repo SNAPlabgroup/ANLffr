@@ -3,13 +3,15 @@ import mne
 import numpy as np
 import os
 import sys
-from mne.fiff import edf
+from mne import find_events
+from mne.io import edf, set_eeg_reference, make_eeg_average_ref_proj
+from ..utils import deprecated
 
 
+@deprecated('May fail depending on MNE version! Use importbdf(.) instead.')
 def importbdf_old(edfname, fiffname, evename, refchans,
                   hptsname=None, aliasname=None):
     """ Wrapper around MNE to import Biosemi BDF files
-    This is deprecated since the python native EDF reader was added to mne.
 
     Parameters
     ----------
@@ -91,17 +93,16 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
 
     # Rereference
     print 'Re-referencing data to', refchans
-    (raw, ref_data) = mne.fiff.set_eeg_reference(raw, refchans, copy=False)
+    (raw, ref_data) = set_eeg_reference(raw, refchans, copy=False)
 
     # Once re-referenced, should not use reference channels as EEG channels
     raw.info['bads'] = refchans
 
     # Add average reference operator for possible use later
-    ave_ref_operator = mne.fiff.make_eeg_average_ref_proj(raw.info,
-                                                          activate=False)
+    ave_ref_operator = make_eeg_average_ref_proj(raw.info, activate=False)
 
     raw = raw.add_proj(ave_ref_operator)
 
-    eves = mne.find_events(raw, min_duration=0.002)
+    eves = find_events(raw, min_duration=0.002)
 
     return (raw, eves)
