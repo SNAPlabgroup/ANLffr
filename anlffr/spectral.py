@@ -1198,7 +1198,7 @@ def mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
         elif thisType == 'normalPhase':
             phaseFlipper = 1.0
 
-        useData = x * phaseShifter
+        useData = x * phaseFlipper
 
         for k, tap in enumerate(w):
             logger.info(thisType + 'Doing Taper #%d', k)
@@ -1208,8 +1208,7 @@ def mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
             # power spectrum
             C = (xw.mean(axis=trialdim)).squeeze()
             # phase locking value
-            plvC = (xw.mean(axis=trialdim) /
-                    (abs(xw).mean(axis=trialdim))).squeeze()
+            plvC = (xw / abs(xw)).mean(axis=trialdim).squeeze()
 
             for fi in np.arange(0, nfft):
                 powerCsd = np.outer(C[:, fi], C[:, fi].conj())
