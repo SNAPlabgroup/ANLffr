@@ -532,15 +532,6 @@ def mtcpca_timeDomain(x, params, verbose=None, bootstrapMode=False):
     w, conc = dpss_windows(x.shape[timedim], 1, 1)
     w = w.squeeze() / w.max()
 
-    # Make space for the CPCA resutls
-    if 'nfft' not in params or params['nfft'] is None::
-        nfft = int(2 ** ceil(sci.log2(x.shape[timedim])))
-    else:
-        nfft = int(params['nfft'])
-        if nfft < x.shape[timedim]:
-            logger.error(
-                'nfft really should be greater than number of time points.')
-
     cpc_freq = np.zeros(nfft, dtype=np.complex)
     cspec = np.zeros(nfft)
     xw = sci.fft(w * x, n=nfft, axis=timedim)
