@@ -1357,7 +1357,7 @@ def generate_parameters(verbose=True, **kwArgs):
 
     logger.info('debugMode = {}'.format(params['debugMode']))
     logger.info('sampleRate (Fs) = {} Hz'.format(params['Fs']))
-    if nfft is not None:
+    if params['nfft'] is not None:
         logger.info('nfft = {}'.format(params['nfft']))
     else:
         logger.info('nfft = (next power of 2) > (number time points)')
@@ -1456,10 +1456,13 @@ def _get_nfft(x, params, timeDim=2, verbose=None):
     '''
     internal function. computes nfft based on x.shape.
     '''
-    if params['nfft'] < x.shape[timeDim]:
-        badNfft = True
-        logger.warn(
-            'nfft really should be greater than number of time points.\n')
+    badNfft = False
+    if 'nfft' in params:
+        if params['nfft'] < x.shape[timeDim]:
+            badNfft = True
+            logger.warn(
+                'nfft should be greater than ' +
+                'number of time points.\n')
 
     if 'nfft' not in params or params['nfft'] is None or badNfft:
         nfft = int(2 ** ceil(sci.log2(x.shape[timeDim])))
