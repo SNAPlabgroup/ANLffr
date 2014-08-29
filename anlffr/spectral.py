@@ -4,11 +4,11 @@ Spectral analysis functions for FFR data
 
 @author: Hari Bharadwaj
 """
-import nitime.algorithms as alg
 import numpy as np
 from math import ceil
 import scipy as sci
 from scipy import linalg
+from .dpss import dpss_windows
 from .utils import logger
 from .utils import deprecated
 # stops warnings about scope redefinition
@@ -75,7 +75,7 @@ def mtplv(x, params, verbose=None, bootstrapMode=False):
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
-    w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
+    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
     if 'nfft' not in params:
@@ -178,7 +178,7 @@ def mtspec(x, params, verbose=None, bootstrapMode=False):
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
-    w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
+    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the results
     if 'nfft' not in params:
@@ -283,7 +283,7 @@ def mtphase(x, params, verbose=None, bootstrapMode=False):
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
-    w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
+    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the results
     if 'nfft' not in params:
@@ -368,7 +368,7 @@ def mtcpca(x, params, verbose=None, bootstrapMode=False):
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
-    w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
+    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
     if 'nfft' not in params:
@@ -458,7 +458,7 @@ def mtcspec(x, params, verbose=None, bootstrapMode=False):
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
-    w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
+    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
     if 'nfft' not in params:
@@ -564,7 +564,7 @@ def mtcpca_timeDomain(x, params, verbose=None, bootstrapMode=False):
     _validate_parameters(params)
 
     # Calculate the tapers
-    w, conc = alg.dpss_windows(x.shape[timedim], 1, 1)
+    w, conc = dpss_windows(x.shape[timedim], 1, 1)
     w = w.squeeze() / w.max()
 
     # Make space for the CPCA resutls
@@ -922,7 +922,7 @@ def mtppc(x, params, verbose=None, bootstrapMode=False):
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
-    w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
+    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
     if 'nfft' not in params:
@@ -1044,7 +1044,7 @@ def mtspecraw(x, params, verbose=None, bootstrapMode=False):
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
-    w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
+    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the results
     if 'nfft' not in params:
@@ -1134,7 +1134,7 @@ def mtpspec(x, params, verbose=None, bootstrapMode=False):
     # Calculate the tapers
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
-    w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
+    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     # Make space for the PLV result
 
@@ -1253,7 +1253,7 @@ def mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
     nfft = params['nfft']
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
-    w, conc = alg.dpss_windows(x.shape[timedim], TW, ntaps)
+    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     plv = np.zeros((ntaps, nfft))
     cspec = np.zeros((ntaps, nfft))

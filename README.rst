@@ -25,6 +25,10 @@ To get the latest code using git, simply type::
 
     git clone git://github.com/haribharadwaj/ANLffr.git
 
+To use the pre-release version v0.1.0, type::
+
+    git checkout tags/v0.1.0
+
 If you don't have git installed, you can download a zip or tarball
 of the latest code: https://github.com/haribharadwaj/ANLffr/archive/v0.1.0.zip
 
@@ -49,7 +53,7 @@ when install) use::
 Dependencies
 ------------
 
-Packages NumPy >= 1.4, SciPy >= 0.7.2 and nitime >= 0.4 are required for the code in the spectral.py module to work. `MNE-python <http://github.com/mne-tools/mne-python>`_ >= 0.7 is required for the modules in the anlffr.helper package (For importing Biosemi BDF files and preprocessing).
+Packages NumPy >= 1.4, SciPy >= 0.7.2 are required for the code in the spectral.py module to work. `MNE-python <http://github.com/mne-tools/mne-python>`_ >= 0.7 is required for the modules in the anlffr.helper package (For importing Biosemi BDF files and preprocessing).
 
 Getting Started
 ---------------
