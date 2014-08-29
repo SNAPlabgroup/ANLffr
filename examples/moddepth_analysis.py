@@ -18,7 +18,7 @@ $ python moddepth_analysis.py dataDir saveDir minTrials subject001 [...]
 
 where [...] are inputs for additional subjects.
 
-Last updated: 08/27/2014
+Last updated: 08/29/2014
 Auditory Neuroscience Laboratory, Boston University
 Contact: lennyv@bu.edu
 '''
@@ -56,9 +56,9 @@ saveDir = sys.argv[2]
 minTrials = int(sys.argv[3])
 subjectList = sys.argv[4:]
 
-# use a 2048 point fft, but results will only include freqs between 70-1000
+# use an auto-calculated nfft
+# but results will only include freqs between 70-1000
 params = spectral.generate_parameters(sampleRate=5000,
-                                      nfft=2048,
                                       fpass=[70.0, 1000.0],
                                       tapers=[2, 3],
                                       noiseFloorType=['phaseFlipHalfTrials'],
@@ -134,13 +134,13 @@ for s in subjectList:
                 'Noise floor Spectrum: bootstrapped variance'))
 
             # now write all the information to file
-            for plvF in range(len(params['f'])):
+            for plvF in range(len(result['f'])):
                 toWrite = printStr.format(
                     s,
                     c,
                     params['nDraws'],
                     params['nPerDraw'],
-                    params['f'][plvF],
+                    result['f'][plvF],
                     (result['mtcpcaPLV_normalPhase']
                            ['bootMean']
                            [plvF]),

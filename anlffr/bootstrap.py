@@ -88,10 +88,10 @@ def bootfunc(inputFunction, x, params, verbose=True):
     efficient, go code it yourself.
 
     Tested using Debian 7, Python 2.7.3 virtual environment with numpy 1.8.1,
-    scipy 0.13.3, nitime 0.5. Code should be platform independent if
+    scipy 0.13.3, nitime 0.4. Code should be platform independent if
     dependencies are satistied, but no effort has gone into checking.
 
-    Last updated: 08/27/2014
+    Last updated: 08/29/2014
     Auditory Neuroscience Laboratory, Boston University
     Contact: lennyv@bu.edu
     """
@@ -130,13 +130,29 @@ def bootfunc(inputFunction, x, params, verbose=True):
 
     numRetrieved = 0
     trialsUsed = []
+    frequencyVector = None
 
     while numRetrieved < params['nDraws']:
         try:
             retrievedData = theQueue.get(True)
             numRetrieved = numRetrieved + 1
 
-            for k in retrievedData[0].keys():
+            usefulKeys = retrievedData[0].keys()
+
+            # only need to retrieve frequency vector once
+            # otherwise remove it from key values to store
+            if 'f' in usefulKeys:
+                if 1 == numRetrieved:
+                    frequencyVector = retrievedData[0]['f']
+                else:
+                    if np.any(frequencyVector != retrievedData[0]['f']):
+                        logger.error('Internal error: ' +
+                                     'frequency axes are different ' +
+                                     'across draws')
+                usefulKeys.remove('f')
+
+            for k in usefulKeys:
+                # set up the dictionary fields with the first retrieved piece
                 if 1 == numRetrieved:
                     results[k] = dict(runningSum=0, runningSS=0, indivDraw=[])
 
@@ -144,7 +160,7 @@ def bootfunc(inputFunction, x, params, verbose=True):
                     results[k]['indivDraw'].append(retrievedData[0][k])
 
                 results[k]['runningSum'] += retrievedData[0][k]
-                results[k]['runningSS'] += retrievedData[0][k] ** 2
+                results[k]['runningSS'] += retrievedData[0][k]**2
 
             trialsUsed.append(retrievedData[1])
 
@@ -157,7 +173,7 @@ def bootfunc(inputFunction, x, params, verbose=True):
             else:
                 raise
 
-    for k in results.keys():
+    for k in usefulKeys:
         output[k] = {}
         output[k]['nDraws'] = int(params['nDraws'])
         output[k]['nPerDraw'] = int(params['nPerDraw'])
@@ -169,8 +185,8 @@ def bootfunc(inputFunction, x, params, verbose=True):
                                                       params['nDraws'])
     output['trialsUsed'] = list(trialsUsed)
 
-    if 'f' in params:
-        output['f'] = np.array(params['f'])
+    if frequencyVector is not None:
+        output['f'] = frequencyVector
 
     logger.info('Completed in: {} s'.format(time.time() - startTime))
 
@@ -211,7 +227,10 @@ def _multiprocess_wrapper(
         theseData, trialsUsed = _combine_random_trials(inputData,
                                                        params['nPerDraw'],
                                                        randomState)
-        out = (inputFunction(theseData, params, verbose=False, bootstrapMode = True), trialsUsed)
+        out = (inputFunction(theseData, params, verbose=False,
+                             bootstrapMode=True),
+               trialsUsed)
+
         resultsQueue.put(out)
 
 
@@ -246,7 +265,7 @@ def _combine_random_trials(inputData,
     tempData = []
     pickTrials = []
 
-    logger.info('\n\nChoosing trials...\n\n ')
+    #logger.info('\n\nChoosing trials...\n\n ')
     for pool in range(numPools):
         if useTrialsPerPool > inputData[pool].shape[1]:
             logger.warning(warnString.format(pool))
@@ -287,48 +306,36 @@ def _validate_bootstrap_params(params, verbose=True):
     '''
     internal function. checks parameters required for bootfunc.
     '''
-    if (('bootstrap_params_validated' not in params) or
-            (params['bootstrap_params_validated'] is False)):
 
-        # check/fix bootStrap input
+    if ('nDraw' in params) or ('nPerDraw' in params):
+        if 'nDraws' not in params:
+            logger.error('when params[''nPerDraw''] is specified, ' +
+                         'params[''nDraw''] must be too')
 
-        if ('nDraw' in params) or ('nPerDraw' in params):
-            if 'nDraws' not in params:
-                logger.error('when params[''nPerDraw''] is specified, ' +
-                             'params[''nDraw''] must be too')
+        if 'nPerDraw' not in params:
+            logger.error('when params[''nDraws''] is specified, ' +
+                         'params[''nPerDraw''] must be too')
 
-            if 'nPerDraw' not in params:
-                logger.error('when params[''nDraws''] is specified, ' +
-                             'params[''nPerDraw''] must be too')
+        if params['nDraws'] != int(params['nDraws']):
+            logger.error('params[''nDraws''] must be an integer')
 
-            if params['nDraws'] != int(params['nDraws']):
-                logger.error('params[''nDraws''] must be an integer')
+        if params['nPerDraw'] != int(params['nPerDraw']):
+            logger.error('params[''nPerDraw''] must be an integer')
 
-            if params['nPerDraw'] != int(params['nPerDraw']):
-                logger.error('params[''nPerDraw''] must be an integer')
+        if params['nDraws'] <= 0:
+            logger.error('params[''nDraws''] must be positive')
 
-            if params['nDraws'] <= 0:
-                logger.error('params[''nDraws''] must be positive')
+        if params['nPerDraw'] <= 0:
+            logger.error('params[''nPerDraw''] must be positive')
 
-            if params['nPerDraw'] <= 0:
-                logger.error('params[''nPerDraw''] must be positive')
+    if 'threads' in params:
+        numCpu = multiprocessing.cpu_count()
 
-        if 'threads' in params:
-            numCpu = multiprocessing.cpu_count()
+        if 0 > params['threads']:
+            logger.error('params[''threads''] should be > 0')
 
-            if 0 > params['threads']:
-                logger.error('params[''threads''] should be > 0')
+        if params['threads'] > numCpu:
+            logger.error(
+                'params[''threads''] should be <= {}'.format(numCpu))
 
-            if params['threads'] > numCpu:
-                logger.error(
-                    'params[''threads''] should be <= {}'.format(numCpu))
-
-        if 'returnIndividualBoostrapResults' in params:
-            params['returnIndividualBootstrapResults'] = (
-                bool(params['returnIndividualBootstrapResults']))
-        else:
-            params['returnIndividualBootstrapResults'] = False
-
-        params['bootstrap_params_validated'] = True
-
-    return params
+    return
