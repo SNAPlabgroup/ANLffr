@@ -8,7 +8,7 @@ import numpy as np
 from math import ceil
 import scipy as sci
 from scipy import linalg
-#from .dpss import dpss_windows
+# from .dpss import dpss_windows
 from nitime.algorithms import dpss_windows
 from .utils import logger
 from .utils import deprecated
@@ -143,7 +143,7 @@ def mtspec(x, params, verbose=None, bootstrapMode=False):
          mtspec - Multitapered spectrum (channel x frequency)
 
          mtspec_* - Noise floor estimate, where * is 'randomPhase' if
-         params['noisefloortype'] == 1, and 'phaseFlipHalfTrials' otherwise
+         params['noisefloortype'] == 1, and 'noiseFloorViaPhaseFlip' otherwise
 
          f - Frequency vector matching plv
 
@@ -185,13 +185,20 @@ def mtspec(x, params, verbose=None, bootstrapMode=False):
         if ('noisefloortype' in params) and (params['noisefloortype'] == 1):
             randph = sci.rand(nchans, ntrials, nfft) * 2 * sci.pi
             N[k, :, :] = abs((xw*sci.exp(1j*randph)).mean(axis=trialdim))
-            noiseTag = 'randomPhase'
+            noiseTag = 'noiseFloorViaRandomPhase'
             logger.info('using random phase for noise floor estimate')
         else:
             randsign = np.ones((nchans, ntrials, nfft))
-            randsign[:, np.arange(0, ntrials, 2), :] = -1
+            
+            if bootstrapMode and 'bootstrapTrialsSelected' in params:
+                flipTheseTrials = np.where(
+                    (params['bootstrapTrialsSelected'] % 2) == 0)
+            else:
+                flipTheseTrials = np.arange(0, ntrials, 2)
+
+            randsign[:, flipTheseTrials, :] = -1
             N[k, :, :] = abs((xw*(randsign.squeeze())).mean(axis=trialdim))
-            noiseTag = 'phaseFlipHalfTrials'
+            noiseTag = 'noiseFloorViaPhaseFlip'
             logger.info('flipping phase of half of the trials ' +
                         'for noise floor estimate')
 
@@ -955,7 +962,7 @@ def mtspecraw(x, params, verbose=None, bootstrapMode=False):
     In bootstrap mode:
         Dictionary with the following keys:
           mtspecraw - Multitapered spectrum (channel x frequency)
-      
+
           f - Frequency vector matching plv
 
     """
@@ -1182,19 +1189,31 @@ def mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
     nfft, f, fInd = _get_freq_stuff(x, params, timedim)
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
+
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     plv = np.zeros((ntaps, nfft))
     cspec = np.zeros((ntaps, nfft))
 
-    phaseTypes = list(['normalPhase', 'phaseFlipHalfTrials'])
+    phaseTypes = list(['normalPhase', 'noiseFloorViaPhaseFlip'])
 
     for thisType in phaseTypes:
-        if thisType == 'phaseFlipHalfTrials':
+        if thisType == 'noiseFloorViaPhaseFlip':
             # flip the phase of every other trial
             phaseFlipper = np.ones(x.shape)
-            flipTheseTrials = np.arange(0, x.shape[1], 2)
+
+            # important change: when noise floor is computed, it will
+            # only select trials that were originally labeled as even-numbered
+            # this way, bootstrapped noise floors are where they would be
+            # expected to be rather than artificially low
+            if bootstrapMode and 'bootstrapTrialsSelected' in params:
+                flipTheseTrials = np.where(
+                    (params['bootstrapTrialsSelected'] % 2) == 0)
+            else:
+                flipTheseTrials = np.arange(0, x.shape[1], 2)
+
             phaseFlipper[:, flipTheseTrials, :] = -1.0
+
         elif thisType == 'normalPhase':
             phaseFlipper = 1.0
 
@@ -1243,13 +1262,40 @@ def mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
         S['plvEigenvalues'] = ['mtcpcaPLVEigenvalues_normalPhase']
 
         N = {}
-        N['spectrum'] = out['mtcpcaSpectrum_phaseFlipHalfTrials']
-        N['plv'] = out['mtcpcaPLV_phaseFlipHalfTrials']
+        N['spectrum'] = out['mtcpcaSpectrum_noiseFloorViaPhaseFlip']
+        N['plv'] = out['mtcpcaPLV_noiseFloorViaPhaseFlip']
         N['spectrumEigenvalues'] = out['mtcpcaSpectrumEigenvalues_' +
-                                       'phaseFlipHalfTrials']
-        N['plvEigenvalues'] = out['mtcpcaPLVEigenvalues_phaseFlipHalfTrials']
+                                       'noiseFloorViaPhaseFlip']
+        N['plvEigenvalues'] = out['mtcpcaPLVEigenvalues_' +
+                                  'noiseFloorViaPhaseFlip']
 
         return (S, N, f)
+
+
+@verbose_decorator
+def _get_freq_stuff(x, params, timeDim=2, verbose=None):
+    '''
+    internal function. computes nfft based on x.shape.
+    '''
+    badNfft = False
+    if 'nfft' in params:
+        if params['nfft'] < x.shape[timeDim]:
+            badNfft = True
+            logger.warn(
+                'nfft should be >= than number of time points. Reverting' +
+                'to default setting of nfft = 2**ceil(log2(nTimePts))\n')
+
+    if 'nfft' not in params or badNfft:
+        nfft = int(2.0 ** ceil(sci.log2(x.shape[timeDim])))
+    else:
+        nfft = int(params['nfft'])
+
+    f = (np.arange(0.0, nfft, 1.0) * params['Fs'] / nfft)
+    fInd = ((f >= params['fpass'][0]) & (f <= params['fpass'][1]))
+
+    f = f[fInd]
+
+    return (nfft, f, fInd)
 
 
 @verbose_decorator
@@ -1279,7 +1325,6 @@ def generate_parameters(verbose=True, **kwArgs):
     would result in the parameter values associated with Fs and threads only,
     without changing the other default values.
 
-
     Returns
     ---------
     Dictionary of parameters.
@@ -1304,7 +1349,7 @@ def generate_parameters(verbose=True, **kwArgs):
 
         elif kw.lower() == 'nfft':
             params['nfft'] = list(kwArgs[kw])
-        
+
         elif kw.lower() == 'tapers':
             params['tapers'] = list(kwArgs[kw])
             params['tapers'][1] = int(params['tapers'][1])
@@ -1359,6 +1404,8 @@ def generate_parameters(verbose=True, **kwArgs):
     logger.info('returnIndividualBootstrapResults = {}'.format(
         params['returnIndividualBootstrapResults']))
 
+    print '\n'
+
     return params
 
 
@@ -1370,7 +1417,7 @@ def _validate_parameters(params, verbose=True):
 
     if 'Fs' not in params:
         logger.error('params[''Fs''] must be specified')
-    
+
     if 'nfft' not in params:
         logger.warn('params[''nfft''] defaulting to ' +
                     '2**ceil(log2(data.shape[timeDimension]))')
@@ -1396,8 +1443,8 @@ def _validate_parameters(params, verbose=True):
 
         if params['fpass'][1] < 0:
             logger.error('params[''fpass[1]''] should be >= 0')
-        
-        if params['fpass'][0] > params['Fs'] / 2.0 :
+
+        if params['fpass'][0] > params['Fs'] / 2.0:
             logger.error('params[''fpass''][0] should be <= ' +
                          'params[''Fs'']/2')
 
@@ -1414,29 +1461,3 @@ def _validate_parameters(params, verbose=True):
                     '[0, (params[''Fs'']/2.0)]')
 
     return params
-
-
-@verbose_decorator
-def _get_freq_stuff(x, params, timeDim=2, verbose=None):
-    '''
-    internal function. computes nfft based on x.shape.
-    '''
-    badNfft = False
-    if 'nfft' in params:
-        if params['nfft'] < x.shape[timeDim]:
-            badNfft = True
-            logger.warn(
-                'nfft should be >= than number of time points. Reverting' +
-                'to default setting of nfft = 2**ceil(log2(nTimePts))\n')
-
-    if 'nfft' not in params or badNfft:
-        nfft = int(2 ** ceil(sci.log2(x.shape[timeDim])))
-    else:
-        nfft = int(params['nfft'])
-
-    f = (np.arange(0.0, nfft, 1.0) * params['Fs'] / nfft)
-    fInd = ((f >= params['fpass'][0]) & (f <= params['fpass'][1]))
-
-    f = f[fInd]
-
-    return (nfft, f, fInd)

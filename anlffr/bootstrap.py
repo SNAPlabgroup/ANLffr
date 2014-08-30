@@ -29,12 +29,13 @@ def bootfunc(inputFunction, x, params, verbose=True):
     x time as the first argument and a paramater dictionary as the second
     argument. Function must return a dictionary.
 
-    x - a 3D numpy array or list/tuple of 3D numpy arrays (chan x trial x
-    time).  If list/tuple with N elements, an equal number of trial repetitions
-    from each array in the list will be used in each pass of the computation;
-    i.e., results will be computed by combining nPerDraw/N trials from per each
-    pool bootstrap repetition. The obvious use case is to sample an equal
-    number of trials from positive and negative polarity FFR trials.
+    x - a 3D numpy array or list/tuple of 3D numpy arrays (note: must be chan x
+    trial x time). If list/tuple with N elements, an equal number of trials
+    will be selected from each pool. Those will then be sampled with
+    replacement to obtain bootstrapped mean/variance, i.e., results will be
+    computed by combining nPerDraw/N trials from each pool per bootstrap
+    repetition. An example use case is to sample an equal number of trials from
+    positive and negative polarity FFR trials.
 
     params - dictionary of parameters. The following fields are required for
     boostrapping, but others may be required based on the specifics of
@@ -45,7 +46,9 @@ def bootfunc(inputFunction, x, params, verbose=True):
           params['nPerDraw'] - number of trials per draw for bootstrapping
 
           params['threads'] - number of threads to spawn; only really useful if
-          a multi-core CPU is available.
+          a multi-core CPU is available. When a multi-core CPU is available,
+          computations should be speeded by a factor of approximately
+          params['threads'].
 
     Returns
     -------
@@ -65,30 +68,29 @@ def bootfunc(inputFunction, x, params, verbose=True):
                                       nPerDraw = 250,
                                       nDraws = 100)
 
-    # load preprocessed data sets with 3D arrays
-    positivePolarityData = io.loadmat(...)['data']
+    # load preprocessed data sets with 3D arrays nPerDraw is 250, so will
+    # select 125 trials from each of these mat files
+    positivePolarityData = io.loadmat(...)['data'] 
     negativePolarityData = io.loadmat(...)['data']
 
     # create a list of data
     dataList = [positivePolaritydata, negativePolaritydata]
 
     # run the boostrap function
-
     results = bootstrap.bootfunc(spectral.mtcpca_complete, dataList, params)
+
     ###
 
     Notes
     -------
-    This is not implemented in a particularly clever or elegant way. But it
-    does provide roughly a factor of N speedup (where N is the number of CPU
-    cores dedicated to this task). The data array is copied in memory for each
-    core that is utilized, and will thus eat quite a bit of RAM when more than
-    1-2 threads are spawned. RAM is cheap, so this shouldn't be too much of a
-    concern in well funded labs.  But if you want something more memory
-    efficient, go code it yourself.
+    This is not implemented in a particularly clever or elegant way. The data
+    array is copied in memory for each core that is utilized, and will thus eat
+    quite a bit of RAM when more than 1-2 threads are spawned. RAM is cheap, so
+    this shouldn't be too much of a concern. But if you want something more
+    memory efficient, go code it yourself.
 
-    Tested using Debian 7, Python 2.7.3 virtual environment with numpy 1.8.1,
-    scipy 0.13.3, nitime 0.4. Code should be platform independent if
+    Tested using Debian 7, Python 2.7.3 virtual environment with numpy 1.8.0,
+    scipy 0.13.3, nitime 0.5. Code should be platform independent if
     dependencies are satistied, but no effort has gone into checking.
 
     Last updated: 08/29/2014
@@ -98,16 +100,19 @@ def bootfunc(inputFunction, x, params, verbose=True):
 
     _validate_bootstrap_params(params)
 
+    sanitizedData = _validate_data(x, params)
+
     startTime = time.time()
     theQueue = multiprocessing.Queue()
     results = {}
     output = {}
 
-    logger.info('Using {} threads...'.format(params['threads']))
+    print('Using {} threads...'.format(params['threads']))
 
     # split the loads roughly equally:
     drawSplit = _compute_thread_split(params)
 
+    # set up the processes
     processList = []
     for proc in range(params['threads']):
         if ('debugMode' in params) and (params['debugMode']):
@@ -119,13 +124,15 @@ def bootfunc(inputFunction, x, params, verbose=True):
         processList.append(
             multiprocessing.Process(
                 target=_multiprocess_wrapper,
-                args=(
-                    inputFunction,
-                    x,
-                    params,
-                    drawSplit[proc],
-                    theQueue,
-                    randomState)))
+                args=(inputFunction,
+                      sanitizedData,
+                      params,
+                      drawSplit[proc],
+                      theQueue,
+                      randomState)
+                )
+            )
+
         processList[proc].start()
 
     numRetrieved = 0
@@ -136,6 +143,10 @@ def bootfunc(inputFunction, x, params, verbose=True):
         try:
             retrievedData = theQueue.get(True)
             numRetrieved = numRetrieved + 1
+            # logger.info doesn't always print to screen
+            # this gives users some on-screen feedback even if logging 
+            # isn't verbose 
+            print('Retrieved data from draw {}'.format(numRetrieved))
 
             usefulKeys = retrievedData[0].keys()
 
@@ -151,6 +162,7 @@ def bootfunc(inputFunction, x, params, verbose=True):
                                      'across draws')
                 usefulKeys.remove('f')
 
+            # now run through the other keys and store the results
             for k in usefulKeys:
                 # set up the dictionary fields with the first retrieved piece
                 if 1 == numRetrieved:
@@ -200,34 +212,18 @@ def _multiprocess_wrapper(
         params,
         nDraws,
         resultsQueue,
-        randomState,
+        randState,
         verbose=True):
     """
     internal function. places results from spectral functions in queue.
     """
-    # set random seed here, otherwise this might draw the same pool
-    # of trials across all processes
-
-    errorString = ('Data should be 3D numpy array or list/tuple ' +
-                   'of 3D numpy arrays')
-
-    # allows you to specify a list of data from each polarity (or other things
-    # you want to combine across) so that the number of trials going into a
-    # computation from different sources can be fixed
-    if isinstance(inputData, list) or isinstance(inputData, tuple):
-        for x in inputData:
-            if not isinstance(x, np.ndarray) and x.ndim != 3:
-                logger.error(errorString)
-    elif isinstance(inputData, np.ndarray):
-        inputData = [inputData]
-    else:
-        logger.error(errorString)
 
     for _ in range(nDraws):
-        theseData, trialsUsed = _combine_random_trials(inputData,
-                                                       params['nPerDraw'],
-                                                       randomState)
-        out = (inputFunction(theseData, params, verbose=False,
+
+        theseData, theseParams, trialsUsed = _select_trials_with_replacement(
+                inputData, params, randState)
+
+        out = (inputFunction(theseData, theseParams, verbose=False,
                              bootstrapMode=True),
                trialsUsed)
 
@@ -243,8 +239,8 @@ def _compute_variance(dataMean, dataSumOfSquares, n, verbose=None):
 
 
 @verbose_decorator
-def _combine_random_trials(inputData,
-                           nPerDraw,
+def _select_trials_with_replacement(inputData,
+                           params,
                            randomState=None,
                            verbose=True):
     """
@@ -252,60 +248,124 @@ def _combine_random_trials(inputData,
     sampled old ones. random sample is with replacement.
     """
 
-    assert isinstance(inputData, list), 'inputData should be a list of arrays'
+    if not isinstance(inputData, list):
+        logger.error('Internal error: inputData should be a list of arrays.')
+
+    # should make a copy of params to avoid original being modified
+    modifiedParams = dict(params)
 
     if randomState is None:
         randomState = np.random.RandomState()
 
-    warnString = ('warning: number of trials requested in draw ' +
-                  '> trials available for pool {}')
     numPools = len(inputData)
-    useTrialsPerPool = int(nPerDraw) / numPools
+    useTrialsPerPool = int(params['nPerDraw']) / numPools
 
     tempData = []
     pickTrials = []
+    tempSelected = []
 
-    #logger.info('\n\nChoosing trials...\n\n ')
     for pool in range(numPools):
-        if useTrialsPerPool > inputData[pool].shape[1]:
-            logger.warning(warnString.format(pool))
 
         randTrials = randomState.randint(
             0,
             inputData[pool].shape[1],
             useTrialsPerPool)
 
+        tempData.append(inputData[pool][:, randTrials, :])
         pickTrials.append(randTrials)
-        tempData.append(inputData[pool][:, pickTrials[-1], :])
+
+        # because things will be concatenated, add useTrialsPerPool*pool
+        # to each value in randTrials. Functions in spectral.py will only
+        # use even-labeled trials When computing the noise floor.
+        tempSelected.append(randTrials + useTrialsPerPool*pool)
 
     useData = np.concatenate(tuple(tempData), axis=1)
 
-    return useData, pickTrials
+    modifiedParams['bootstrapTrialsSelected'] = np.concatenate(
+        tuple(tempSelected))
+
+    return (useData, modifiedParams, pickTrials)
 
 
 @verbose_decorator
 def _compute_thread_split(params, verbose=None):
     """
     internal function. computes how many draws each process will take on.
-
     """
 
     drawSplit = []
     distribute = int(params['nDraws']) / int(params['threads'])
     leftover = int(params['nDraws']) % int(params['threads'])
+
     for _ in range(params['threads']):
-        drawSplit.append(distribute)
+        if distribute != 0:
+            drawSplit.append(distribute)
+
     for r in range(leftover):
         drawSplit[r] = drawSplit[r] + 1
 
     return drawSplit
 
 
+def _validate_data(inputData, params):
+    """
+    shuffles the trials and ensures that each pool to draw from has the same
+    number of trials by selecting the minimum number in common across all pools
+    """
+
+    # allows you to specify a list of data from each polarity (or other things
+    # you want to combine across) so that the number of trials going into a
+    # computation from different sources can be fixed
+    if isinstance(inputData, list) or isinstance(inputData, tuple):
+        for x in inputData:
+            if not isinstance(x, np.ndarray) and x.ndim != 3:
+                logger.error(errorString)
+    elif isinstance(inputData, np.ndarray):
+        inputData = [np.array(inputData)]
+    else:
+        logger.error('Data should be 3D numpy array or list/tuple ' +
+                     'of 3D numpy arrays')
+
+    poolSizes = []
+
+    # select the smallest number in common between sizes of inputData and 
+    # nPerDraw / len(inputData)
+    for x in inputData:
+        poolSizes.append(x.shape[1])
+
+    poolSizes.append(params['nPerDraw'] / len(inputData))
+    minimumAcrossPools = min(poolSizes)
+
+    # make sure this is always an even number...everything is nicer that way
+    if minimumAcrossPools % 2 == 1:
+        minimumAcrossPools -= 1
+
+    # make sure the user knows this is what is going on
+    warnStr1 = ('Selecting {} per pool '.format(minimumAcrossPools) +
+                'WITHOUT replacement from original data supplied')
+
+    warnStr2 = ('Will select from this subset WITH replacement to ' +
+                'compute bootstrap mean/variances')
+
+    logger.critical(warnStr1 + '\n' + warnStr2)
+
+    validatedData = []
+
+    # shuffle the trials within each pool and equate the number of trials:
+    for x in inputData:
+        # select the same number of trials from each pool without replacement
+        randomOrder = np.random.permutation(x.shape[1])[0:minimumAcrossPools]
+        validatedData.append(x[:, randomOrder, :])
+
+    return validatedData
+
+
 @verbose_decorator
 def _validate_bootstrap_params(params, verbose=True):
-    '''
-    internal function. checks parameters required for bootfunc.
-    '''
+    """
+    internal function. checks parameters required for bootfunc and throws an
+    error if conditions are violated
+    """
 
     if ('nDraw' in params) or ('nPerDraw' in params):
         if 'nDraws' not in params:
@@ -335,7 +395,7 @@ def _validate_bootstrap_params(params, verbose=True):
             logger.error('params[''threads''] should be > 0')
 
         if params['threads'] > numCpu:
-            logger.error(
+            logger.warn(
                 'params[''threads''] should be <= {}'.format(numCpu))
 
     return

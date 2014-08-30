@@ -14,7 +14,7 @@ This generates a .csv file with the results after bootstrapping in an
 output.
 
 command line usage:
-$ python moddepth_analysis.py dataDir saveDir minTrials subject001 [...]
+$ python moddepth_analysis.py dataDir saveDir nPerDraw subject001 [...]
 
 where [...] are inputs for additional subjects.
 
@@ -26,10 +26,8 @@ Contact: lennyv@bu.edu
 from __future__ import print_function
 import os
 import sys
-from numpy import random
 from scipy import io
-from anlffr import spectral
-from anlffr import bootstrap
+from anlffr import spectral, bootstrap
 from anlffr.utils import logger
 
 # prints all info messages from ANLffr to stdout
@@ -42,29 +40,31 @@ def _check_filename(inSaveName, inSaveDir):
     '''
 
     counter = 0
-    fullFilename = os.path.join(inSaveDir, inSaveName)
+
+    origFullFilename = os.path.join(inSaveDir, inSaveName)
+
+    fullFilename = str(origFullFilename)
 
     while os.path.exists(fullFilename):
         counter = counter+1
-        fullFilename = (os.path.splitext(fullFilename)[0] + '_' +
+        fullFilename = (os.path.splitext(origFullFilename)[0] + '_' +
                         str(counter) + '.csv')
 
     return fullFilename
 
 dataDir = sys.argv[1]
 saveDir = sys.argv[2]
-minTrials = int(sys.argv[3])
 subjectList = sys.argv[4:]
 
 # use an auto-calculated nfft
 # but results will only include freqs between 70-1000
+# warning: will take a long time, even with multiple threads
 params = spectral.generate_parameters(sampleRate=5000,
                                       fpass=[70.0, 1000.0],
                                       tapers=[2, 3],
-                                      noiseFloorType=['phaseFlipHalfTrials'],
-                                      nDraws=60,
-                                      nPerDraw=minTrials,
-                                      threads=4,
+                                      nDraws=240,
+                                      nPerDraw=500,
+                                      threads=2,
                                       returnIndividualBootstrapResults=False)
 
 # cycle through each subject, then conditions 1-3
@@ -91,20 +91,13 @@ for s in subjectList:
                 mat = wholeMat['data']
                 sampleRateFromFile = wholeMat['sampleRate']
 
-                assert mat.shape[1] > minTrials
-
                 assert sampleRateFromFile == params['Fs']
 
-                # consider a random subset of minTrials trials
-                permutedTrials = random.permutation(range(mat.shape[1]))
-                useTrials = permutedTrials[0:minTrials]
-
-                # bootstrap.bootfunc takes in a list of arrays, then subsamples
-                # evenly from those arrays those
-                print('using {} polarity trials:\n {}'.format(l, useTrials))
-                combinedData.append(mat[:, useTrials, :])
+                combinedData.append(mat)
 
             # call the bootrapping function using mtcpca_complete
+            # this will handle the data shuffling and making sure that
+            # things are sampled evenly from each polarity data set
             result = bootstrap.bootfunc(spectral.mtcpca_complete,
                                         combinedData,
                                         params)
@@ -112,7 +105,7 @@ for s in subjectList:
             # here is where you can change the format to better suit whatever
             # you're doing see the first outputFile.write command to see the
             # current column headers
-
+            #
             # there are 13 columns
             printStr = ('{0},{1},{2},{3},{4},{5},{6},{7},' +
                         '{8},{9},{10},{11},{12}\n')
@@ -156,19 +149,19 @@ for s in subjectList:
                            ['bootVariance']
                            [plvF]
                      ),
-                    (result['mtcpcaPLV_phaseFlipHalfTrials']
+                    (result['mtcpcaPLV_noiseFloorViaPhaseFlip']
                            ['bootMean']
                            [plvF]
                      ),
-                    (result['mtcpcaPLV_phaseFlipHalfTrials']
+                    (result['mtcpcaPLV_noiseFloorViaPhaseFlip']
                            ['bootVariance']
                            [plvF]
                      ),
-                    (result['mtcpcaSpectrum_phaseFlipHalfTrials']
+                    (result['mtcpcaSpectrum_noiseFloorViaPhaseFlip']
                            ['bootMean']
                            [plvF]
                      ),
-                    (result['mtcpcaSpectrum_phaseFlipHalfTrials']
+                    (result['mtcpcaSpectrum_noiseFloorViaPhaseFlip']
                            ['bootVariance']
                            [plvF]
                      )
