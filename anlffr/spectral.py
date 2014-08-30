@@ -4,16 +4,22 @@ Spectral analysis functions for FFR data
 
 @author: Hari Bharadwaj
 """
+
 import numpy as np
 from math import ceil
 import scipy as sci
 from scipy import linalg
-# from .dpss import dpss_windows
-from nitime.algorithms import dpss_windows
-from .utils import logger
-from .utils import deprecated
-# stops warnings about scope redefinition
-from .utils import verbose as verbose_decorator
+
+# use nitime if available:
+try:
+    from nitime.algorithms import dpss_windows
+    print '\nnitime detected. Using nitime.algorithms.dpss_windows\n'
+except ImportError:
+    from .dpss import dpss_windows
+    print '\nnitime not detected. Using anlffr.dpss.dpss_windows\n'
+
+# rename verbose to make pep8/pylint checkers stop complainig
+from .utils import logger, deprecated, verbose as verbose_decorator
 
 
 @verbose_decorator
@@ -1192,8 +1198,8 @@ def mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
 
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
-    plv = np.zeros((ntaps, nfft))
-    cspec = np.zeros((ntaps, nfft))
+    plv = np.zeros((ntaps, len(f)))
+    cspec = np.zeros((ntaps, len(f)))
 
     phaseTypes = list(['normalPhase', 'noiseFloorViaPhaseFlip'])
 
@@ -1224,12 +1230,13 @@ def mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
 
             xw = sci.fft((tap * useData), n=nfft, axis=timedim)
 
-            # power spectrum
-            C = (xw.mean(axis=trialdim)).squeeze()
-            # phase locking value
+            # no point keeping everything if fpass was already set
+            xw = xw[:, :, fInd]
+
+            C = xw.mean(axis=trialdim).squeeze()
             plvC = (xw / abs(xw)).mean(axis=trialdim).squeeze()
 
-            for fi in np.arange(0, nfft):
+            for fi in np.arange(0, len(f)):
                 powerCsd = np.outer(C[:, fi], C[:, fi].conj())
                 powerEigenvals = linalg.eigh(powerCsd, eigvals_only=True)
                 cspec[k, fi] = powerEigenvals[-1] / nchans
@@ -1238,18 +1245,43 @@ def mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
                 plvEigenvals = linalg.eigh(plvCsd, eigvals_only=True)
                 plv[k, fi] = plvEigenvals[-1] / nchans
 
-        # Average over tapers and squeeze to pretty shapes
-        cpcaSpectrum = (cspec.mean(axis=0)).squeeze()
-        cpcaPhaseLockingValue = (plv.mean(axis=0)).squeeze()
+            # compute running sum to get average over trials:
 
-        if cpcaSpectrum.shape != cpcaPhaseLockingValue.shape:
+            # for fi in range(len(f)):
+            #     csdSpec = np.zeros((nchans, nchans), dtype=np.complex)
+            #     csdPLV = np.zeros((nchans, nchans), dtype=np.complex)
+            #     for trial in range(ntrials):
+            #         thisData = np.array(xw[:, trial, fi], dtype=np.complex)
+            #         print (thisData, thisData.conj)
+
+            #         csdSpec += np.outer(thisData, thisData.conj())
+
+            #         csdPLV += np.outer((thisData / abs(thisData)),
+            #                            ((thisData.conj())/abs(thisData)))
+
+            #     # now divide running sums by ntrials to actually get CSD
+            #     # and normalized CSD estimates:
+
+            #     csdSpec /= ntrials
+            #     csdPLV /= ntrials
+
+            #     # now obtain the eigenvalues
+            #     eigSpec = linalg.eigh(csdSpec, eigvals_only=True)
+            #     eigPLV = linalg.eigh(csdPLV, eigvals_only=True)
+
+            #     cspec[k, fi] = eigSpec[-1]/nchans
+            #     plv[k, fi] = eigPLV[-1]/nchans
+
+        # Avage over tapers and squeeze to pretty shapes
+        mtcpcaSpectrum = (cspec.mean(axis=0)).squeeze()
+        mtcpcaPhaseLockingValue = (plv.mean(axis=0)).squeeze()
+
+        if mtcpcaSpectrum.shape != mtcpcaPhaseLockingValue.shape:
             logger.error(
                 'shape mismatch between PLV and magnitude result arrays')
 
-        out['mtcpcaSpectrum_' + thisType] = cpcaSpectrum[fInd]
-        out['mtcpcaPLV_' + thisType] = cpcaPhaseLockingValue[fInd]
-        out['mtcpcaSpectrumEigenvalues_' + thisType] = cspec[:, fInd]
-        out['mtcpcaPLVEigenvalues_' + thisType] = plv[:, fInd]
+        out['mtcpcaSpectrum_' + thisType] = mtcpcaSpectrum
+        out['mtcpcaPLV_' + thisType] = mtcpcaPhaseLockingValue
 
     if bootstrapMode:
         out['f'] = f
@@ -1258,16 +1290,10 @@ def mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
         S = {}
         S['spectrum'] = ['mtcpcaSpectrum_normalPhase']
         S['plv'] = ['mtcpcaPLV_normalPhase']
-        S['spectrumEigenvalues'] = ['mtcpcaSpectrumEigenvalues_normalPhase']
-        S['plvEigenvalues'] = ['mtcpcaPLVEigenvalues_normalPhase']
 
         N = {}
         N['spectrum'] = out['mtcpcaSpectrum_noiseFloorViaPhaseFlip']
         N['plv'] = out['mtcpcaPLV_noiseFloorViaPhaseFlip']
-        N['spectrumEigenvalues'] = out['mtcpcaSpectrumEigenvalues_' +
-                                       'noiseFloorViaPhaseFlip']
-        N['plvEigenvalues'] = out['mtcpcaPLVEigenvalues_' +
-                                  'noiseFloorViaPhaseFlip']
 
         return (S, N, f)
 
@@ -1348,7 +1374,7 @@ def generate_parameters(verbose=True, **kwArgs):
             params['Fs'] = int(kwArgs[kw])
 
         elif kw.lower() == 'nfft':
-            params['nfft'] = list(kwArgs[kw])
+            params['nfft'] = int(kwArgs[kw])
 
         elif kw.lower() == 'tapers':
             params['tapers'] = list(kwArgs[kw])

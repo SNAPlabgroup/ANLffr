@@ -11,6 +11,7 @@ import multiprocessing
 import errno
 from .utils import logger
 from .utils import verbose as verbose_decorator
+import sys
 
 
 @verbose_decorator
@@ -70,7 +71,7 @@ def bootfunc(inputFunction, x, params, verbose=True):
 
     # load preprocessed data sets with 3D arrays nPerDraw is 250, so will
     # select 125 trials from each of these mat files
-    positivePolarityData = io.loadmat(...)['data'] 
+    positivePolarityData = io.loadmat(...)['data']
     negativePolarityData = io.loadmat(...)['data']
 
     # create a list of data
@@ -115,7 +116,7 @@ def bootfunc(inputFunction, x, params, verbose=True):
     # set up the processes
     processList = []
     for proc in range(params['threads']):
-        if ('debugMode' in params) and (params['debugMode']):
+        if 'debugMode' in params and params['debugMode']:
             logger.warn('Warning: setting fixed random seeds!')
             randomState = np.random.RandomState(proc)
         else:
@@ -143,10 +144,11 @@ def bootfunc(inputFunction, x, params, verbose=True):
         try:
             retrievedData = theQueue.get(True)
             numRetrieved = numRetrieved + 1
-            # logger.info doesn't always print to screen
-            # this gives users some on-screen feedback even if logging 
-            # isn't verbose 
-            print('Retrieved data from draw {}'.format(numRetrieved))
+            # this gives users some on-screen feedback even if logging
+            # isn't verbose
+            sys.stdout.write('\rRetrieved data from draw {}/{}'.format(
+                numRetrieved, params['nDraws']))
+            sys.stdout.flush()
 
             usefulKeys = retrievedData[0].keys()
 
@@ -200,7 +202,7 @@ def bootfunc(inputFunction, x, params, verbose=True):
     if frequencyVector is not None:
         output['f'] = frequencyVector
 
-    logger.info('Completed in: {} s'.format(time.time() - startTime))
+    logger.info('\nCompleted in: {} s'.format(time.time() - startTime))
 
     return output
 
@@ -221,7 +223,7 @@ def _multiprocess_wrapper(
     for _ in range(nDraws):
 
         theseData, theseParams, trialsUsed = _select_trials_with_replacement(
-                inputData, params, randState)
+            inputData, params, randState)
 
         out = (inputFunction(theseData, theseParams, verbose=False,
                              bootstrapMode=True),
@@ -240,9 +242,9 @@ def _compute_variance(dataMean, dataSumOfSquares, n, verbose=None):
 
 @verbose_decorator
 def _select_trials_with_replacement(inputData,
-                           params,
-                           randomState=None,
-                           verbose=True):
+                                    params,
+                                    randomState=None,
+                                    verbose=True):
     """
     internal function. creates a new data array from a series of randomly
     sampled old ones. random sample is with replacement.
@@ -316,19 +318,22 @@ def _validate_data(inputData, params):
     # allows you to specify a list of data from each polarity (or other things
     # you want to combine across) so that the number of trials going into a
     # computation from different sources can be fixed
-    if isinstance(inputData, list) or isinstance(inputData, tuple):
-        for x in inputData:
-            if not isinstance(x, np.ndarray) and x.ndim != 3:
-                logger.error(errorString)
-    elif isinstance(inputData, np.ndarray):
-        inputData = [np.array(inputData)]
-    else:
+    try:
+        if isinstance(inputData, list) or isinstance(inputData, tuple):
+            for x in inputData:
+                if not isinstance(x, np.ndarray) and x.ndim != 3:
+                    raise TypeError
+
+        elif isinstance(inputData, np.ndarray):
+            inputData = [np.array(inputData)]
+
+    except TypeError:
         logger.error('Data should be 3D numpy array or list/tuple ' +
                      'of 3D numpy arrays')
 
     poolSizes = []
 
-    # select the smallest number in common between sizes of inputData and 
+    # select the smallest number in common between sizes of inputData and
     # nPerDraw / len(inputData)
     for x in inputData:
         poolSizes.append(x.shape[1])
@@ -351,10 +356,16 @@ def _validate_data(inputData, params):
 
     validatedData = []
 
+    if 'debugMode' in params and params['debugMode']:
+        randState = np.random.RandomState(31415)
+    else:
+        randState = np.random.RandomState(None)
+
     # shuffle the trials within each pool and equate the number of trials:
     for x in inputData:
         # select the same number of trials from each pool without replacement
-        randomOrder = np.random.permutation(x.shape[1])[0:minimumAcrossPools]
+        randomOrder = randState.permutation(x.shape[1])
+        randomOrder = randomOrder[0:minimumAcrossPools]
         validatedData.append(x[:, randomOrder, :])
 
     return validatedData

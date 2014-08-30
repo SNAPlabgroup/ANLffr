@@ -14,7 +14,7 @@ This generates a .csv file with the results after bootstrapping in an
 output.
 
 command line usage:
-$ python moddepth_analysis.py dataDir saveDir nPerDraw subject001 [...]
+$ python moddepth_analysis.py dataDir saveDir subject001 [...]
 
 where [...] are inputs for additional subjects.
 
@@ -32,6 +32,7 @@ from anlffr.utils import logger
 
 # prints all info messages from ANLffr to stdout
 logger.setLevel('INFO')
+
 
 def _check_filename(inSaveName, inSaveDir):
     '''
@@ -54,7 +55,7 @@ def _check_filename(inSaveName, inSaveDir):
 
 dataDir = sys.argv[1]
 saveDir = sys.argv[2]
-subjectList = sys.argv[4:]
+subjectList = sys.argv[3:]
 
 # use an auto-calculated nfft
 # but results will only include freqs between 70-1000
@@ -62,14 +63,15 @@ subjectList = sys.argv[4:]
 params = spectral.generate_parameters(sampleRate=5000,
                                       fpass=[70.0, 1000.0],
                                       tapers=[2, 3],
-                                      nDraws=240,
+                                      nDraws=100,
                                       nPerDraw=500,
                                       threads=2,
-                                      returnIndividualBootstrapResults=False)
+                                      returnIndividualBootstrapResults=False,
+                                      debugMode=True)
 
 # cycle through each subject, then conditions 1-3
 for s in subjectList:
-    for c in range(1, 4):
+    for c in range(1, 2):
 
         loadName = {}
         print('condition: {}'.format(c))
