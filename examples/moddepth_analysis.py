@@ -63,9 +63,9 @@ subjectList = sys.argv[3:]
 params = spectral.generate_parameters(sampleRate=5000,
                                       fpass=[70.0, 1000.0],
                                       tapers=[2, 3],
-                                      nDraws=100,
+                                      nDraws=1,
                                       nPerDraw=500,
-                                      threads=2,
+                                      threads=1,
                                       returnIndividualBootstrapResults=False,
                                       debugMode=True)
 
