@@ -55,9 +55,9 @@ References:
 
 [1] Bharadwaj, H and Shinn-Cunningham, BG (2014).
       "Rapid acquisition of auditory subcortical steady state responses using
-       multichannel recordings".
-       J Clin Neurophys 125 1878--1898.
-       http://dx.doi.org/10.1016/j.clinph.2014.01.011
+      multichannel recordings".
+      J Clin Neurophys 125 1878--1898.
+      http://dx.doi.org/10.1016/j.clinph.2014.01.011
 
 @author: Hari Bharadwaj
 """
