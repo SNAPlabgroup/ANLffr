@@ -18,6 +18,7 @@ to extract FFRs from multichannel recordings is
 Support for "bootstrapping" any of the included functions is also available. 
 The code repository lives on `github <http://github.com/haribharadwaj/ANLffr>`_. 
 See the `Introduction <intro.html>`_ page for instructions to obtain your copy.
+A pdf version of the latest documentation can be found `here <http://nmr.mgh.harvard.edu/~hari/ANLffr.pdf>`_.
 
 
 
