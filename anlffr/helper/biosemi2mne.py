@@ -5,7 +5,7 @@ import os
 import sys
 from mne import find_events
 from mne.io import edf, set_eeg_reference, make_eeg_average_ref_proj
-from ..utils import deprecated
+from ..utils import logger, deprecated
 
 
 @deprecated('May fail depending on MNE version! Use importbdf(.) instead.')
@@ -57,7 +57,7 @@ def importbdf_old(edfname, fiffname, evename, refchans,
 
 
 def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
-              hptsname=None):
+              hptsname=None, verbose=None):
     """Wrapper around mne-python to import BDF files
 
     Parameters
@@ -70,7 +70,11 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
     refchans - list of strings with reference channel names
                (Optional) By default ['EXG1','EXG2']
     hptsname - Name of the electrode position file in .hpts format with path
-               (Optional) By default a 32 channel Biosemi layout is used.
+               (Optional) By default a 32 channel Biosemi layout is used. If
+               the nchans is >= 64, a 64 channel Biosemi layout is used.
+    verbose : bool, str, int, or None (Optional)
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
 
     Returns
     -------
@@ -86,7 +90,15 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
     # Default HPTS file
     if(hptsname is None):
         anlffr_root = os.path.dirname(sys.modules['anlffr'].__file__)
-        hptsname = os.path.join(anlffr_root, 'helper/sysfiles/biosemi32.hpts')
+        if nchans >= 64:
+            logger.info('Number of channels is greater than 64.'
+                        ' Hence loading a 64 channel montage.')
+            hptsname = os.path.join(anlffr_root,
+                                    'helper/sysfiles/biosemi64.hpts')
+        else:
+            logger.info('Loading a default 32 channel montage.')
+            hptsname = os.path.join(anlffr_root,
+                                    'helper/sysfiles/biosemi32.hpts')
 
     raw = edf.read_raw_edf(bdfname, n_eeg=nchans, preload=True,
                            hpts=hptsname, stim_channel='Status')

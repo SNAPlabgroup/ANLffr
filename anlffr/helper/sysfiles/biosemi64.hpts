@@ -1,0 +1,82 @@
+# This file contains the default locations for the 64
+# channel biosemi cap, available on the biosemi website
+# http://www.biosemi.com/download/Cap_coords_all.xls
+#
+# This includes default locations for 3 cardinal landmarks,
+# the nasion, and the left and right auriculars
+#
+# 64 eeg channels
+# ---------------
+eeg A1 -95.0 -31.0 -3.0
+eeg A2 -81 -59 -3
+eeg A3 -87 -41 28
+eeg A4 -71 -29 64
+eeg A5 -67 -55 50
+eeg A6 -63 -73 26
+eeg A7 -59 -81 -3
+eeg A8 -31 -95 -3
+eeg A9 -34 -89 31
+eeg A10 -36 -68 64
+eeg A11 -37 -37 85
+eeg A12 0 -39 92
+eeg A13 0 -72 69
+eeg A14 0 -93 36
+eeg A15 0 -100 -3
+eeg A16 31 -95 -3
+eeg A17 34 -89 31
+eeg A18 36 -68 64
+eeg A19 37 -37 85
+eeg A20 71 -29 64
+eeg A21 67 -55 50
+eeg A22 63 -73 26
+eeg A23 59 -81 -3
+eeg A24 53 -73 -42
+eeg A25 81 -59 -3
+eeg A26 87 -41 28
+eeg A27 95 -31 -3
+eeg A28 91 0 -42
+eeg A29 100 0 -3
+eeg A30 93 0 36
+eeg A31 72 0 69
+eeg A32 39 0 92
+eeg B1 -100 0 -3
+eeg B2 -95 31 -3
+eeg B3 -81 59 -3
+eeg B4 -87 41 28
+eeg B5 -93 0 36
+eeg B6 -72 0 69
+eeg B7 -71 29 64
+eeg B8 -67 55 50
+eeg B9 -63 73 26
+eeg B10 -59 81 -3
+eeg B11 -31 95 -3
+eeg B12 -34 89 31
+eeg B13 -36 68 64
+eeg B14 -37 37 85
+eeg B15 -39 0 92
+eeg B16 0 0 100
+eeg B17 0 39 92
+eeg B18 0 72 69
+eeg B19 0 93 36
+eeg B20 0 100 -3
+eeg B21 31 95 -3
+eeg B22 34 89 31
+eeg B23 36 68 64
+eeg B24 37 37 85
+eeg B25 71 29 64
+eeg B26 67 55 50
+eeg B27 63 73 26
+eeg B28 59 81 -3
+eeg B29 -53 73 -42
+eeg B30 81 59 -3
+eeg B31 87 41 28
+eeg B32 95 31 -3
+#
+# 3 cardinal landmarks
+# --------------------
+# Nasion
+cardinal 2 -91 0 -42
+# Left auricular
+cardinal 1 0 -91 -42
+# Right auricular
+cardinal 3 0 91 -42
