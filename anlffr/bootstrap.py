@@ -146,9 +146,9 @@ def bootfunc(inputFunction, x, params, verbose=True):
             numRetrieved = numRetrieved + 1
             # this gives users some on-screen feedback even if logging
             # isn't verbose
-            sys.stdout.write('\rRetrieved data from draw {}/{}'.format(
-                numRetrieved, params['nDraws']))
-            sys.stdout.flush()
+            #sys.stdout.write('\rRetrieved data from draw {}/{}'.format(
+            #    numRetrieved, params['nDraws']))
+            #sys.stdout.flush()
 
             usefulKeys = retrievedData[0].keys()
 

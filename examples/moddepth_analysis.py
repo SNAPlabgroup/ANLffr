@@ -18,7 +18,7 @@ $ python moddepth_analysis.py dataDir saveDir subject001 [...]
 
 where [...] are inputs for additional subjects.
 
-Last updated: 08/29/2014
+Last updated: 10/01/2014
 Auditory Neuroscience Laboratory, Boston University
 Contact: lennyv@bu.edu
 '''
@@ -32,7 +32,6 @@ from anlffr.utils import logger
 
 # prints all info messages from ANLffr to stdout
 logger.setLevel('INFO')
-
 
 def _check_filename(inSaveName, inSaveDir):
     '''
@@ -57,17 +56,17 @@ dataDir = sys.argv[1]
 saveDir = sys.argv[2]
 subjectList = sys.argv[3:]
 
-# use an auto-calculated nfft
+# use an auto-calculated nfft length
 # but results will only include freqs between 70-1000
 # warning: will take a long time, even with multiple threads
 params = spectral.generate_parameters(sampleRate=5000,
                                       fpass=[70.0, 1000.0],
                                       tapers=[2, 3],
-                                      nDraws=1,
+                                      nDraws=100,
                                       nPerDraw=500,
-                                      threads=1,
+                                      threads=4,
                                       returnIndividualBootstrapResults=False,
-                                      debugMode=True)
+                                      debugMode=False)
 
 # cycle through each subject, then conditions 1-3
 for s in subjectList:
@@ -100,7 +99,7 @@ for s in subjectList:
             # call the bootrapping function using mtcpca_complete
             # this will handle the data shuffling and making sure that
             # things are sampled evenly from each polarity data set
-            result = bootstrap.bootfunc(spectral.mtcpca_complete,
+            result = bootstrap.bootfunc(spectral._mtcpca_complete,
                                         combinedData,
                                         params)
 
