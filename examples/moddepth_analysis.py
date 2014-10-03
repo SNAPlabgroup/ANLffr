@@ -29,6 +29,11 @@ import sys
 from scipy import io
 from anlffr import spectral, bootstrap
 from anlffr.utils import logger
+from multiprocessing import freeze_support
+
+
+if __name__ == '__main__':
+    freeze_support()
 
 # prints all info messages from ANLffr to stdout
 logger.setLevel('INFO')
