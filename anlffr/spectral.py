@@ -154,9 +154,9 @@ def mtplv(x, params, verbose=None, bootstrapMode=False):
             plvtap[k, :, :] = ((abs(xw.mean(axis=trialdim))**2) /
                                ((abs(xw) ** 2).mean(axis=trialdim)))
 
-    plvtap = plvtap.mean(axis=0).squeeze()
+    plvtap = plvtap.mean(axis=0)
 
-    plvtap = plvtap[:, fInd]
+    plvtap = plvtap[:, fInd].squeeze()
 
     if bootstrapMode:
         out = {}
@@ -269,10 +269,10 @@ def mtspec(x, params, verbose=None, bootstrapMode=False):
                         'for noise floor estimate')
 
     # Average over tapers and squeeze to pretty shapes
-    S = S.mean(axis=0).squeeze()
-    N = N.mean(axis=0).squeeze()
-    S = S[:, fInd] if len(x.shape) == 3 else S[fInd]
-    N = N[:, fInd] if len(x.shape) == 3 else N[fInd]
+    S = S.mean(axis=0)
+    N = N.mean(axis=0)
+    S = S[:, fInd].squeeze()
+    N = N[:, fInd].squeeze()
 
     if bootstrapMode:
         out = {}
@@ -1000,8 +1000,8 @@ def mtppc(x, params, verbose=None, bootstrapMode=False):
                                 (abs(xw_1).mean(trialdim) *
                                  abs(xw_2).mean(trialdim)))
 
-    ppc = ppc.mean(axis=0).squeeze()
-    ppc = ppc[:, fInd]
+    ppc = ppc.mean(axis=0)
+    ppc = ppc[:, fInd].squeeze()
 
     if bootstrapMode:
         out = {}
@@ -1084,8 +1084,8 @@ def mtspecraw(x, params, verbose=None, bootstrapMode=False):
         Sraw[k, :, :] = (abs(xw)**2).mean(axis=trialdim)
 
     # Average over tapers and squeeze to pretty shapes
-    Sraw = Sraw.mean(axis=0).squeeze()
-    Sraw = Sraw[:, fInd]
+    Sraw = Sraw.mean(axis=0)
+    Sraw = Sraw[:, fInd].squeeze()
 
     if bootstrapMode:
         out = {}
@@ -1181,8 +1181,8 @@ def mtpspec(x, params, verbose=None, bootstrapMode=False):
                 xw_2 = xw[ch, trial_pairs[:, 1], :]
                 pspec[k, ch, :] = np.real((xw_1*xw_2.conj()).mean(axis=0))
 
-    pspec = pspec.mean(axis=0).squeeze()
-    pspec = pspec[:, fInd]
+    pspec = pspec.mean(axis=0)
+    pspec = pspec[:, fInd].squeeze()
 
     if bootstrapMode:
         out = {}
