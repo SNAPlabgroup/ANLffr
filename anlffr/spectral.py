@@ -116,6 +116,7 @@ def mtplv(x, params, verbose=None, bootstrapMode=False):
     """
 
     logger.info('Running Multitaper PLV Estimation')
+    x = x.squeeze()
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
@@ -153,9 +154,9 @@ def mtplv(x, params, verbose=None, bootstrapMode=False):
             plvtap[k, :, :] = ((abs(xw.mean(axis=trialdim))**2) /
                                ((abs(xw) ** 2).mean(axis=trialdim)))
 
-    plvtap = plvtap.mean(axis=0).squeeze()
+    plvtap = plvtap.mean(axis=0)
 
-    plvtap = plvtap[:, fInd]
+    plvtap = plvtap[:, fInd].squeeze()
 
     if bootstrapMode:
         out = {}
@@ -213,6 +214,7 @@ def mtspec(x, params, verbose=None, bootstrapMode=False):
     """
 
     logger.info('Running Multitaper Spectrum and Noise-floor Estimation')
+    x = x.squeeze()
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
@@ -267,10 +269,10 @@ def mtspec(x, params, verbose=None, bootstrapMode=False):
                         'for noise floor estimate')
 
     # Average over tapers and squeeze to pretty shapes
-    S = S.mean(axis=0).squeeze()
-    N = N.mean(axis=0).squeeze()
-    S = S[:, fInd]
-    N = N[:, fInd]
+    S = S.mean(axis=0)
+    N = N.mean(axis=0)
+    S = S[:, fInd].squeeze()
+    N = N[:, fInd].squeeze()
 
     if bootstrapMode:
         out = {}
@@ -321,6 +323,7 @@ def mtphase(x, params, verbose=None, bootstrapMode=False):
     """
 
     logger.info('Running Multitaper Spectrum and Noise-floor Estimation')
+    x = x.squeeze()
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
@@ -403,6 +406,7 @@ def mtcpca(x, params, verbose=None, bootstrapMode=False):
     """
 
     logger.info('Running Multitaper Complex PCA based PLV Estimation')
+    x = x.squeeze()
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
@@ -492,6 +496,7 @@ def mtcspec(x, params, verbose=None, bootstrapMode=False):
     """
 
     logger.info('Running Multitaper Complex PCA based power estimation!')
+    x = x.squeeze()
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
@@ -590,6 +595,7 @@ def mtcpca_timeDomain(x, params, verbose=None, bootstrapMode=False):
     """
 
     logger.info('Running Multitaper Complex PCA to extract time waveform!')
+    x = x.squeeze()
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
@@ -679,6 +685,7 @@ def bootfunc(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
     """
 
     logger.info('Running a bootstrapped version of function: %s', func)
+    x = x.squeeze()
     if(len(x.shape) == 3):
         trialdim = 1
         ntrials = x.shape[trialdim]
@@ -802,6 +809,7 @@ def indivboot(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
     """
 
     logger.info('Running a bootstrapped version of function: %s', func)
+    x = x.squeeze()
     if(len(x.shape) == 3):
         trialdim = 1
         ntrials = x.shape[trialdim]
@@ -928,6 +936,7 @@ def mtppc(x, params, verbose=None, bootstrapMode=False):
     """
 
     logger.info('Running Multitaper Pairwise Phase Consistency Estimate')
+    x = x.squeeze()
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
@@ -991,8 +1000,8 @@ def mtppc(x, params, verbose=None, bootstrapMode=False):
                                 (abs(xw_1).mean(trialdim) *
                                  abs(xw_2).mean(trialdim)))
 
-    ppc = ppc.mean(axis=0).squeeze()
-    ppc = ppc[:, fInd]
+    ppc = ppc.mean(axis=0)
+    ppc = ppc[:, fInd].squeeze()
 
     if bootstrapMode:
         out = {}
@@ -1041,7 +1050,7 @@ def mtspecraw(x, params, verbose=None, bootstrapMode=False):
     """
 
     logger.info('Running Multitaper Raw Spectrum Estimation')
-
+    x = x.squeeze()
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
@@ -1075,8 +1084,8 @@ def mtspecraw(x, params, verbose=None, bootstrapMode=False):
         Sraw[k, :, :] = (abs(xw)**2).mean(axis=trialdim)
 
     # Average over tapers and squeeze to pretty shapes
-    Sraw = Sraw.mean(axis=0).squeeze()
-    Sraw = Sraw[:, fInd]
+    Sraw = Sraw.mean(axis=0)
+    Sraw = Sraw[:, fInd].squeeze()
 
     if bootstrapMode:
         out = {}
@@ -1125,7 +1134,7 @@ def mtpspec(x, params, verbose=None, bootstrapMode=False):
 
     """
     logger.info('Running Multitaper Pairwise Power Estimate')
-
+    x = x.squeeze()
     if(len(x.shape) == 3):
         timedim = 2
         trialdim = 1
@@ -1172,8 +1181,8 @@ def mtpspec(x, params, verbose=None, bootstrapMode=False):
                 xw_2 = xw[ch, trial_pairs[:, 1], :]
                 pspec[k, ch, :] = np.real((xw_1*xw_2.conj()).mean(axis=0))
 
-    pspec = pspec.mean(axis=0).squeeze()
-    pspec = pspec[:, fInd]
+    pspec = pspec.mean(axis=0)
+    pspec = pspec[:, fInd].squeeze()
 
     if bootstrapMode:
         out = {}
@@ -1258,7 +1267,7 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
 
     logger.info('Running Multitaper Complex PCA based ' +
                 'plv and power estimation.')
-
+    x = x.squeeze()
     if len(x.shape) == 3:
         timedim = 2
         trialdim = 1
