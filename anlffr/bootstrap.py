@@ -11,7 +11,7 @@ import multiprocessing
 import errno
 from .utils import logger
 from .utils import verbose as verbose_decorator
-import sys
+import platform
 
 
 @verbose_decorator
@@ -84,17 +84,21 @@ def bootfunc(inputFunction, x, params, verbose=True):
 
     Notes
     -------
-    This is not implemented in a particularly clever or elegant way. The data
-    array is copied in memory for each core that is utilized, and will thus eat
-    quite a bit of RAM when more than 1-2 threads are spawned. RAM is cheap, so
-    this shouldn't be too much of a concern. But if you want something more
-    memory efficient, go code it yourself.
+    Bootstrapping is not implemented in a particularly clever or elegant way -
+    it's an "emarassingly parallel" problem, and thus was coded in the
+    bare-minimum fashion so that boostrap computations can proceed in parallel
+    and change the amount of time you wait for a final result by 1/nThreads.
+    Note that this speedup will only take place on Linux/Mac (POSIX in
+    general?) systems - not on Windows machines. The current implementation
+    does not play well with process forks on Windows, and as such, any attempt
+    to run things in multithreaded mode will fall back to a single thread.
 
-    Tested using Debian 7, Python 2.7.3 virtual environment with numpy 1.8.0,
-    scipy 0.13.3, nitime 0.5. Code should be platform independent if
-    dependencies are satistied, but no effort has gone into checking.
+    The data array is copied in memory for each core that is utilized, and will
+    thus eat quite a bit of RAM when more than 1-2 threads are spawned. RAM is
+    cheap, so this shouldn't be too much of a concern. But if you want
+    something more memory efficient, go code it yourself.
 
-    Last updated: 08/29/2014
+    Last updated: 10/05/2014
     Auditory Neuroscience Laboratory, Boston University
     Contact: lennyv@bu.edu
     """
@@ -108,33 +112,39 @@ def bootfunc(inputFunction, x, params, verbose=True):
     results = {}
     output = {}
 
-    print('Using {} threads...'.format(params['threads']))
-
     # split the loads roughly equally:
     drawSplit = _compute_thread_split(params)
 
     # set up the processes
     processList = []
-    for proc in range(params['threads']):
+    for proc in range(len(drawSplit)):
         if 'debugMode' in params and params['debugMode']:
             logger.warn('Warning: setting fixed random seeds!')
             randomState = np.random.RandomState(proc)
         else:
             randomState = np.random.RandomState(None)
 
-        processList.append(
-            multiprocessing.Process(
-                target=_multiprocess_wrapper,
-                args=(inputFunction,
-                      sanitizedData,
-                      params,
-                      drawSplit[proc],
-                      theQueue,
-                      randomState)
+        if platform.system() != 'Windows':
+            processList.append(
+                multiprocessing.Process(
+                    target=_multiprocess_wrapper,
+                    args=(inputFunction,
+                          sanitizedData,
+                          params,
+                          drawSplit[proc],
+                          theQueue,
+                          randomState)
+                    )
                 )
-            )
 
-        processList[proc].start()
+            processList[proc].start()
+        else:
+            _multiprocess_wrapper(inputFunction,
+                                  sanitizedData,
+                                  params,
+                                  drawSplit[proc],
+                                  theQueue,
+                                  randomState)
 
     numRetrieved = 0
     trialsUsed = []
@@ -144,11 +154,6 @@ def bootfunc(inputFunction, x, params, verbose=True):
         try:
             retrievedData = theQueue.get(True)
             numRetrieved = numRetrieved + 1
-            # this gives users some on-screen feedback even if logging
-            # isn't verbose
-            #sys.stdout.write('\rRetrieved data from draw {}/{}'.format(
-            #    numRetrieved, params['nDraws']))
-            #sys.stdout.flush()
 
             usefulKeys = retrievedData[0].keys()
 
@@ -186,6 +191,11 @@ def bootfunc(inputFunction, x, params, verbose=True):
                 continue
             else:
                 raise
+
+    # ensure the queue is empty:
+    if int(theQueue.qsize()) > 0:
+        logger.error('Internal error: retrieved all data, but Queue is ' +
+                     'nonempty: {}'.format(int(theQueue.qsize())))
 
     for k in usefulKeys:
         output[k] = {}
@@ -229,7 +239,7 @@ def _multiprocess_wrapper(
                              bootstrapMode=True),
                trialsUsed)
 
-        resultsQueue.put(out)
+        resultsQueue.put(out)  # block by default...
 
 
 @verbose_decorator
@@ -294,17 +304,19 @@ def _compute_thread_split(params, verbose=None):
     """
     internal function. computes how many draws each process will take on.
     """
-
     drawSplit = []
-    distribute = int(params['nDraws']) / int(params['threads'])
-    leftover = int(params['nDraws']) % int(params['threads'])
+    if platform.system() != 'Windows':
+        distribute = int(params['nDraws']) / int(params['threads'])
+        leftover = int(params['nDraws']) % int(params['threads'])
 
-    for _ in range(params['threads']):
-        if distribute != 0:
-            drawSplit.append(distribute)
+        for _ in range(params['threads']):
+            if distribute != 0:
+                drawSplit.append(distribute)
 
-    for r in range(leftover):
-        drawSplit[r] = drawSplit[r] + 1
+        for r in range(leftover):
+            drawSplit[r] = drawSplit[r] + 1
+    else:
+        drawSplit.append(params['nDraws'])
 
     return drawSplit
 
@@ -378,6 +390,10 @@ def _validate_bootstrap_params(params, verbose=True):
     error if conditions are violated
     """
 
+    if platform.architecture()[0] != '64bit':
+        logger.warning('Python is running in 32 bit mode. ' +
+                       'You may encounter out-of-memory issues.')
+
     if ('nDraw' in params) or ('nPerDraw' in params):
         if 'nDraws' not in params:
             logger.error('when params[''nPerDraw''] is specified, ' +
@@ -399,7 +415,15 @@ def _validate_bootstrap_params(params, verbose=True):
         if params['nPerDraw'] <= 0:
             logger.error('params[''nPerDraw''] must be positive')
 
-    if 'threads' in params:
+    if platform.system() == 'Windows':
+        logger.warn('Windows system detected...' +
+                    'will only use one execution thread.')
+        checkThreads = False
+    else:
+        checkThreads = True
+
+    if checkThreads and 'threads' in params:
+        print('Attempting to use {} threads...'.format(params['threads']))
         numCpu = multiprocessing.cpu_count()
 
         if 0 > params['threads']:
@@ -407,6 +431,6 @@ def _validate_bootstrap_params(params, verbose=True):
 
         if params['threads'] > numCpu:
             logger.warn(
-                'params[''threads''] should be <= {}'.format(numCpu))
+                'params[''threads''] should optimally be <= {}'.format(numCpu))
 
     return
