@@ -309,12 +309,15 @@ def _compute_thread_split(params, verbose=None):
         distribute = int(params['nDraws']) / int(params['threads'])
         leftover = int(params['nDraws']) % int(params['threads'])
 
-        for _ in range(params['threads']):
-            if distribute != 0:
+        if distribute != 0:
+            for _ in range(params['threads']):
                 drawSplit.append(distribute)
 
-        for r in range(leftover):
-            drawSplit[r] = drawSplit[r] + 1
+            for r in range(leftover):
+                drawSplit[r] = drawSplit[r] + 1
+        else:
+            for _ in range(int(params['nDraws'])):
+                drawSplit.append(1)
     else:
         drawSplit.append(params['nDraws'])
 
