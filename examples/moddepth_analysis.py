@@ -18,7 +18,7 @@ $ python moddepth_analysis.py dataDir saveDir subject001 [...]
 
 where [...] are inputs for additional subjects.
 
-Last updated: 08/29/2014
+Last updated: 10/05/2014
 Auditory Neuroscience Laboratory, Boston University
 Contact: lennyv@bu.edu
 '''
@@ -30,9 +30,9 @@ from scipy import io
 from anlffr import spectral, bootstrap
 from anlffr.utils import logger
 
+
 # prints all info messages from ANLffr to stdout
 logger.setLevel('INFO')
-
 
 def _check_filename(inSaveName, inSaveDir):
     '''
@@ -57,21 +57,28 @@ dataDir = sys.argv[1]
 saveDir = sys.argv[2]
 subjectList = sys.argv[3:]
 
-# use an auto-calculated nfft
+# use an auto-calculated nfft length
 # but results will only include freqs between 70-1000
 # warning: will take a long time, even with multiple threads
+
+# note: nPerDraw should be set to the same number across conditions for a
+# single subject. Here, we assume the minimum number of trials available for
+# all subjects is 500/condition, split across polarities (i.e., 250 positive,
+# 250 negative). If the total number of trials available is > 500 (i.e., >
+# 250/polarity), the bootstrap program will fix the number of trials per
+# polarity at 250.
 params = spectral.generate_parameters(sampleRate=5000,
                                       fpass=[70.0, 1000.0],
                                       tapers=[2, 3],
-                                      nDraws=1,
+                                      nDraws=100,
                                       nPerDraw=500,
-                                      threads=1,
+                                      threads=4,
                                       returnIndividualBootstrapResults=False,
-                                      debugMode=True)
+                                      debugMode=False)
 
 # cycle through each subject, then conditions 1-3
 for s in subjectList:
-    for c in range(1, 2):
+    for c in range(1, 4):
 
         loadName = {}
         print('condition: {}'.format(c))
@@ -84,6 +91,7 @@ for s in subjectList:
         outputFile = open(outputFilename, 'w')
 
         try:
+            # create a list of data to sample from:
             combinedData = []
 
             # loads the positive and negative mat files for this condition (c)
@@ -93,14 +101,15 @@ for s in subjectList:
                 mat = wholeMat['data']
                 sampleRateFromFile = wholeMat['sampleRate']
 
-                assert sampleRateFromFile == params['Fs']
+                if sampleRateFromFile != params['Fs']:
+                    logger.error('sample rate mismatch')
 
                 combinedData.append(mat)
 
-            # call the bootrapping function using mtcpca_complete
+            # call the bootsrapping function using mtcpca_complete
             # this will handle the data shuffling and making sure that
             # things are sampled evenly from each polarity data set
-            result = bootstrap.bootfunc(spectral.mtcpca_complete,
+            result = bootstrap.bootfunc(spectral._mtcpca_complete,
                                         combinedData,
                                         params)
 
@@ -177,10 +186,4 @@ for s in subjectList:
             print(('\nCannot find file: {}, skipping,' +
                    'condition {} \n').format(loadName[l],
                                              c))
-            continue
-        except AssertionError:
-            print(('\nOnly {} trials detected in {}, ' +
-                   'skipping condition {}...\n').format(mat.shape[1],
-                                                        loadName[l],
-                                                        c))
             continue
