@@ -5,6 +5,7 @@ import os
 import sys
 from mne import find_events
 from mne.io import edf, set_eeg_reference, make_eeg_average_ref_proj
+from mne.channels import read_montage
 from ..utils import logger, deprecated
 
 
@@ -93,28 +94,37 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
         if nchans >= 64:
             logger.info('Number of channels is greater than 64.'
                         ' Hence loading a 64 channel montage.')
-            hptsname = os.path.join(anlffr_root,
-                                    'helper/sysfiles/biosemi64.hpts')
+            hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
+            hptsname = 'biosemi64'
+            montage = read_montage(kind=hptsname, path=hptspath)
+            reref = True
         else:
-            logger.info('Loading a default 32 channel montage.')
-            hptsname = os.path.join(anlffr_root,
-                                    'helper/sysfiles/biosemi32.hpts')
+            if nchans == 2:
+                logger.info('Number of channels is 2.'
+                            'Guessing ABR montage.')
+                montage = None
+                reref = False
+            else:
+                logger.info('Loading a default 32 channel montage.')
+                hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
+                hptsname = 'biosemi32'
+                montage = read_montage(kind=hptsname, path=hptspath)
+                reref = True
 
-    raw = edf.read_raw_edf(bdfname, n_eeg=nchans, preload=True,
-                           hpts=hptsname, stim_channel='Status')
+    raw = edf.read_raw_edf(bdfname, montage=montage, preload=True,
+                           stim_channel='Status')
 
     # Rereference
-    print 'Re-referencing data to', refchans
-    (raw, ref_data) = set_eeg_reference(raw, refchans, copy=False)
-
-    # Once re-referenced, should not use reference channels as EEG channels
-    raw.info['bads'] = refchans
+    if reref:
+        print 'Re-referencing data to', refchans
+        (raw, ref_data) = set_eeg_reference(raw, refchans, copy=False)
+        raw.info['bads'] += refchans
 
     # Add average reference operator for possible use later
     ave_ref_operator = make_eeg_average_ref_proj(raw.info, activate=False)
 
     raw = raw.add_proj(ave_ref_operator)
 
-    eves = find_events(raw, min_duration=0.002)
+    eves = find_events(raw, shortest_event=1)
 
     return (raw, eves)
