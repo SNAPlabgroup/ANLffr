@@ -58,7 +58,7 @@ def importbdf_old(edfname, fiffname, evename, refchans,
 
 
 def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
-              hptsname=None, verbose=None):
+              hptsname=None, mask=-256, verbose=None):
     """Wrapper around mne-python to import BDF files
 
     Parameters
@@ -69,10 +69,12 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
     nchans -  Number of EEG channels (including references)
               (Optional) By default, 34 (32 + 2 references)
     refchans - list of strings with reference channel names
-               (Optional) By default ['EXG1','EXG2']
+               (Optional) By default ['EXG1','EXG2'].
+               Use None for average reference.
     hptsname - Name of the electrode position file in .hpts format with path
                (Optional) By default a 32 channel Biosemi layout is used. If
                the nchans is >= 64, a 64 channel Biosemi layout is used.
+    mask - Integer mask to use for trigger channel (Default is -256).
     verbose : bool, str, int, or None (Optional)
         The verbosity of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL.
@@ -97,34 +99,32 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
             hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
             hptsname = 'biosemi64'
             montage = read_montage(kind=hptsname, path=hptspath)
-            reref = True
+            misc = ['EXG3', u'EXG4', u'EXG5', u'EXG6', u'EXG7', u'EXG8']
         else:
             if nchans == 2:
                 logger.info('Number of channels is 2.'
                             'Guessing ABR montage.')
                 montage = None
-                reref = False
             else:
                 logger.info('Loading a default 32 channel montage.')
                 hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
                 hptsname = 'biosemi32'
                 montage = read_montage(kind=hptsname, path=hptspath)
-                reref = True
+                misc = ['EXG3', u'EXG4', u'EXG5', u'EXG6', u'EXG7', u'EXG8']
 
     raw = edf.read_raw_edf(bdfname, montage=montage, preload=True,
-                           stim_channel='Status')
+                           misc=misc, stim_channel='Status')
 
     # Rereference
-    if reref:
+    if refchans is not None:
         print 'Re-referencing data to', refchans
         (raw, ref_data) = set_eeg_reference(raw, refchans, copy=False)
         raw.info['bads'] += refchans
+    else:
+        # Add average reference operator for possible use later
+        ave_ref_operator = make_eeg_average_ref_proj(raw.info, activate=False)
+        raw = raw.add_proj(ave_ref_operator)
 
-    # Add average reference operator for possible use later
-    ave_ref_operator = make_eeg_average_ref_proj(raw.info, activate=False)
-
-    raw = raw.add_proj(ave_ref_operator)
-
-    eves = find_events(raw, shortest_event=1)
+    eves = find_events(raw, shortest_event=1, mask=mask)
 
     return (raw, eves)
