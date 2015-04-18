@@ -1316,7 +1316,7 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
         for k, tap in enumerate(w):
             logger.info(thisType + 'Doing Taper #%d', k)
 
-            xw = sci.fft((tap * useData), n=nfft, axis=timedim)
+            xw = np.fft.rfft((tap * useData), n=nfft, axis=timedim)
 
             # no point keeping everything if fpass was already set
             xw = xw[:, :, fInd]
@@ -1385,7 +1385,8 @@ def _get_freq_stuff(x, params, timeDim=2, verbose=None):
     else:
         nfft = int(params['nfft'])
 
-    f = (np.arange(0.0, nfft, 1.0) * params['Fs'] / nfft)
+    #f = (np.arange(0.0, nfft, 1.0) * params['Fs'] / nfft)
+    f = np.linspace(0.0, params['Fs'] / 2.0, nfft/2+1)
     fInd = ((f >= params['fpass'][0]) & (f <= params['fpass'][1]))
 
     f = f[fInd]
