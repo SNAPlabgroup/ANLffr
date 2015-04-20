@@ -4,7 +4,6 @@ Bootstrap helper functions for FFR data
 
 @author: Lenny Varghese
 """
-from __future__ import print_function
 import numpy as np
 import time
 import multiprocessing
@@ -367,7 +366,7 @@ def _validate_data(inputData, params):
     warnStr2 = ('Will select from this subset WITH replacement to ' +
                 'compute bootstrap mean/variances')
 
-    logger.critical(warnStr1 + '\n' + warnStr2)
+    logger.info(warnStr1 + '\n' + warnStr2)
 
     validatedData = []
 
@@ -426,7 +425,8 @@ def _validate_bootstrap_params(params, verbose=True):
         checkThreads = True
 
     if checkThreads and 'threads' in params:
-        print('Attempting to use {} threads...'.format(params['threads']))
+        logger.info('Attempting to use ' +
+                    '{} threads...'.format(params['threads']))
         numCpu = multiprocessing.cpu_count()
 
         if 0 > params['threads']:
