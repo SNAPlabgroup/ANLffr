@@ -146,7 +146,7 @@ def mtplv(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = sci.fft(tap * x, n=nfft, axis=timedim)
+        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
 
         if(params['itc'] == 0):
             plvtap[k, :, :] = abs((xw/abs(xw)).mean(axis=trialdim))**2
@@ -243,7 +243,7 @@ def mtspec(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = sci.fft(tap * x, n=nfft, axis=timedim)
+        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
 
         S[k, :, :] = abs(xw.mean(axis=trialdim))
 
@@ -351,7 +351,7 @@ def mtphase(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = sci.fft(tap * x, n=nfft, axis=timedim)
+        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
         Ph[k, :, :] = np.angle(xw.mean(axis=trialdim))
 
     # Average over tapers and squeeze to pretty shapes
@@ -427,7 +427,7 @@ def mtcpca(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = sci.fft(tap * x, n=nfft, axis=timedim)
+        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
 
         if params['itc']:
             C = (xw.mean(axis=trialdim) /
@@ -519,7 +519,7 @@ def mtcspec(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = sci.fft(tap * x, n=nfft, axis=timedim)
+        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
         C = (xw.mean(axis=trialdim)).squeeze()
         for fi in np.arange(0, nfft):
             Csd = np.outer(C[:, fi], C[:, fi].conj())
@@ -613,7 +613,7 @@ def mtcpca_timeDomain(x, params, verbose=None, bootstrapMode=False):
 
     cpc_freq = np.zeros(nfft, dtype=np.complex)
     cspec = np.zeros(nfft)
-    xw = sci.fft(w * x, n=nfft, axis=timedim)
+    xw = np.fft.rfft(w * x, n=nfft, axis=timedim)
     C = (xw.mean(axis=trialdim)).squeeze()
     Cnorm = C / ((abs(xw).mean(axis=trialdim)).squeeze())
     for fi in np.arange(0, nfft):
@@ -966,7 +966,7 @@ def mtppc(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = sci.fft(tap * x, n=nfft, axis=timedim)
+        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
 
         npairs = params['nPairs']
         trial_pairs = np.random.randint(0, ntrials, (npairs, 2))
@@ -1080,7 +1080,7 @@ def mtspecraw(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = sci.fft(tap * x, n=nfft, axis=timedim)
+        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
         Sraw[k, :, :] = (abs(xw)**2).mean(axis=trialdim)
 
     # Average over tapers and squeeze to pretty shapes
@@ -1165,7 +1165,7 @@ def mtpspec(x, params, verbose=None, bootstrapMode=False):
     for ch in np.arange(0, nchans):
         for k, tap in enumerate(w):
             logger.debug('Running Channel # %d, taper #%d', ch, k)
-            xw = sci.fft(tap * x, n=nfft, axis=timedim)
+            xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
             npairs = params['Npairs']
             trial_pairs = np.random.randint(0, ntrials, (npairs, 2))
 
@@ -1200,7 +1200,8 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
     Internal convenience function to obtain plv and spectrum with cpca and
     multitaper.  Equivalent to calling:
 
-    spectral.mtcpca(data, params, ...)
+    spectral.mtcpca(data, params, ...) with ITC = 0
+    spectral.mtcpca(data, params, ...) with ITC = 1
     spectral.mtcspec(data, params, ...)
 
     With the exception that this function returns a dictionary for S + N, each
@@ -1287,6 +1288,7 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
     plv = np.zeros((ntaps, len(f)))
+    itc = np.zeros((ntaps, len(f)))
     cspec = np.zeros((ntaps, len(f)))
 
     phaseTypes = list(['normalPhase', 'noiseFloorViaPhaseFlip'])
@@ -1323,11 +1325,10 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
 
             C = xw.mean(axis=trialdim).squeeze()
 
-            if params['itc']:
-                plvC = (xw.mean(axis=trialdim) /
-                        (abs(xw).mean(axis=trialdim))).squeeze()
-            else:
-                plvC = (xw / abs(xw)).mean(axis=trialdim).squeeze()
+            itcC = (xw.mean(axis=trialdim) /
+                    (abs(xw).mean(axis=trialdim))).squeeze()
+
+            plvC = (xw / abs(xw)).mean(axis=trialdim).squeeze()
 
             for fi in np.arange(0, len(f)):
                 powerCsd = np.outer(C[:, fi], C[:, fi].conj())
@@ -1337,17 +1338,25 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
                 plvCsd = np.outer(plvC[:, fi], plvC[:, fi].conj())
                 plvEigenvals = linalg.eigh(plvCsd, eigvals_only=True)
                 plv[k, fi] = plvEigenvals[-1] / nchans
+                
+                itcCsd = np.outer(itcC[:, fi], itcC[:, fi].conj())
+                itcEigenvals = linalg.eigh(itcCsd, eigvals_only=True)
+                itc[k, fi] = itcEigenvals[-1] / nchans
+                
 
         # Avage over tapers and squeeze to pretty shapes
         mtcpcaSpectrum = (cspec.mean(axis=0)).squeeze()
         mtcpcaPhaseLockingValue = (plv.mean(axis=0)).squeeze()
+        mtcpcaInterTrialCoherence = (itc.mean(axis=0)).squeeze()
 
-        if mtcpcaSpectrum.shape != mtcpcaPhaseLockingValue.shape:
-            logger.error('internal error: shape mismatch between PLV ' +
+        if (mtcpcaSpectrum.shape != mtcpcaPhaseLockingValue.shape or
+            mtcpcaSpectrum.shape != mtcpcaInterTrialCoherence.shape):
+            logger.error('internal error: shape mismatch between PLV/ITC ' +
                          ' and magnitude result arrays')
 
         out['mtcpcaSpectrum_' + thisType] = mtcpcaSpectrum
         out['mtcpcaPLV_' + thisType] = mtcpcaPhaseLockingValue
+        out['mtcpcaITC_' + thisType] = mtcpcaInterTrialCoherence
 
     if bootstrapMode:
         out['f'] = f
@@ -1356,10 +1365,12 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
         S = {}
         S['spectrum'] = ['mtcpcaSpectrum_normalPhase']
         S['plv'] = ['mtcpcaPLV_normalPhase']
+        S['itc'] = ['mtcpcaITC_normalPhase']
 
         N = {}
         N['spectrum'] = out['mtcpcaSpectrum_noiseFloorViaPhaseFlip']
         N['plv'] = out['mtcpcaPLV_noiseFloorViaPhaseFlip']
+        S['itc'] = ['mtcpcaITC_noiseFloorViaPhaseFlip']
 
         return (S, N, f)
 
