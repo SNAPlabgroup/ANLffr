@@ -99,7 +99,8 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
             hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
             hptsname = 'biosemi64'
             montage = read_montage(kind=hptsname, path=hptspath)
-            misc = ['EXG3', u'EXG4', u'EXG5', u'EXG6', u'EXG7', u'EXG8']
+            misc = ['EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6',
+                    'EXG7', 'EXG8']
         else:
             if nchans == 2:
                 logger.info('Number of channels is 2.'
@@ -111,7 +112,8 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
                 hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
                 hptsname = 'biosemi32'
                 montage = read_montage(kind=hptsname, path=hptspath)
-                misc = ['EXG3', u'EXG4', u'EXG5', u'EXG6', u'EXG7', u'EXG8']
+                misc = ['EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6',
+                        'EXG7', 'EXG8']
 
     raw = edf.read_raw_edf(bdfname, montage=montage, preload=True,
                            misc=misc, stim_channel='Status')
