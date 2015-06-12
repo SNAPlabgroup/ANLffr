@@ -58,7 +58,7 @@ def importbdf_old(edfname, fiffname, evename, refchans,
 
 
 def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
-              hptsname=None, mask=-256, extrachans=None, verbose=None):
+              hptsname=None, mask=-256, extrachans=[], verbose=None):
     """Wrapper around mne-python to import BDF files
 
     Parameters
@@ -77,6 +77,7 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
     mask - Integer mask to use for trigger channel (Default is -256).
     extrachans - Additional channels other than EEG and EXG that may be in the
                  bdf file. These will be marked as MISC in mne-python.
+                 Specify as list of names.
     verbose : bool, str, int, or None (Optional)
         The verbosity of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL.
