@@ -102,7 +102,8 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
                         ' Hence loading a 64 channel montage.')
             hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
             hptsname = 'biosemi64'
-            montage = read_montage(kind=hptsname, path=hptspath)
+            montage = read_montage(kind=hptsname, path=hptspath,
+                                   transform=True)
             misc = ['EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6',
                     'EXG7', 'EXG8']
         else:
@@ -115,7 +116,8 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
                 logger.info('Loading a default 32 channel montage.')
                 hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
                 hptsname = 'biosemi32'
-                montage = read_montage(kind=hptsname, path=hptspath)
+                montage = read_montage(kind=hptsname, path=hptspath,
+                                       transform=True)
                 misc = ['EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6',
                         'EXG7', 'EXG8']
 
