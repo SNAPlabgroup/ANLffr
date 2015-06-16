@@ -6,7 +6,7 @@ import sys
 from mne import find_events
 from mne.io import edf, set_eeg_reference, make_eeg_average_ref_proj
 from mne.channels import read_montage
-from ..utils import logger, deprecated
+from ..utils import logger, deprecated, verbose
 
 
 @deprecated('May fail depending on MNE version! Use importbdf(.) instead.')
@@ -57,6 +57,7 @@ def importbdf_old(edfname, fiffname, evename, refchans,
     return (raw, eves)
 
 
+@verbose
 def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
               hptsname=None, mask=-256, extrachans=[], verbose=None):
     """Wrapper around mne-python to import BDF files
