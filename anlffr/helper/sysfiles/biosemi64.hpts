@@ -75,8 +75,8 @@ eeg B32 95 31 -3
 # 3 cardinal landmarks
 # --------------------
 # Nasion
-cardinal 2 0 -91 -42
+cardinal 2 -84 -42 -33
 # Left auricular
-cardinal 1 -91 0 -42
+cardinal 1 0 -94 -33
 # Right auricular
-cardinal 3 91 0 -42
+cardinal 3 0 94 -33
