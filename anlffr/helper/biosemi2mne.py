@@ -6,7 +6,7 @@ import sys
 from mne import find_events
 from mne.io import edf, set_eeg_reference, make_eeg_average_ref_proj
 from mne.channels import read_montage
-from ..utils import logger, deprecated
+from ..utils import logger, deprecated, verbose
 
 
 @deprecated('May fail depending on MNE version! Use importbdf(.) instead.')
@@ -57,8 +57,9 @@ def importbdf_old(edfname, fiffname, evename, refchans,
     return (raw, eves)
 
 
+@verbose
 def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
-              hptsname=None, mask=-256, verbose=None):
+              hptsname=None, mask=-256, extrachans=[], verbose=None):
     """Wrapper around mne-python to import BDF files
 
     Parameters
@@ -75,6 +76,9 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
                (Optional) By default a 32 channel Biosemi layout is used. If
                the nchans is >= 64, a 64 channel Biosemi layout is used.
     mask - Integer mask to use for trigger channel (Default is -256).
+    extrachans - Additional channels other than EEG and EXG that may be in the
+                 bdf file. These will be marked as MISC in mne-python.
+                 Specify as list of names.
     verbose : bool, str, int, or None (Optional)
         The verbosity of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL.
@@ -98,20 +102,26 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
                         ' Hence loading a 64 channel montage.')
             hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
             hptsname = 'biosemi64'
-            montage = read_montage(kind=hptsname, path=hptspath)
-            misc = ['EXG3', u'EXG4', u'EXG5', u'EXG6', u'EXG7', u'EXG8']
+            montage = read_montage(kind=hptsname, path=hptspath,
+                                   transform=True)
+            misc = ['EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6',
+                    'EXG7', 'EXG8']
         else:
             if nchans == 2:
                 logger.info('Number of channels is 2.'
                             'Guessing ABR montage.')
                 montage = None
+                misc = None
             else:
                 logger.info('Loading a default 32 channel montage.')
                 hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
                 hptsname = 'biosemi32'
-                montage = read_montage(kind=hptsname, path=hptspath)
-                misc = ['EXG3', u'EXG4', u'EXG5', u'EXG6', u'EXG7', u'EXG8']
+                montage = read_montage(kind=hptsname, path=hptspath,
+                                       transform=True)
+                misc = ['EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6',
+                        'EXG7', 'EXG8']
 
+    misc += extrachans
     raw = edf.read_raw_edf(bdfname, montage=montage, preload=True,
                            misc=misc, stim_channel='Status')
 
