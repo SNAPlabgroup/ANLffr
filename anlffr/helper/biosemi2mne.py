@@ -111,7 +111,7 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
                 logger.info('Number of channels is 2.'
                             'Guessing ABR montage.')
                 montage = None
-                misc = None
+                misc = []
             else:
                 logger.info('Loading a default 32 channel montage.')
                 hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
