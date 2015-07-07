@@ -343,10 +343,40 @@ def rescale(data, times, baseline, mode, verbose=None, copy=True):
     return data
 
 
-def plot_tfr(tfr, times, freqs, ch_idx=0, vmin=None, vmax=None, ylim=None,
-             vline=None, x_label='Time (s)', y_label='Frequency (Hz)',
-             colorbar=False, cmap='RdBu_r', title=None):
-    """ Aux function to show time-freq map on topo """
+def plot_tfr(tfr, times, freqs, ch_idx=0, vmin=None, vmax=None,
+             x_label='Time (s)', y_label='Frequency (Hz)',
+             colorbar=True, cmap='RdBu_r', title=None):
+    """ Basic plotting function to show time-freq
+
+    Parameters
+    ----------
+    tfr : np.ndarray, shape (n_channels, n_frequencies, n_times)
+        Time-frequency data from tfr_multitaper (power or itc)
+    times: np.ndarray, shape (n_times, )
+        Time array corresponding to tfr, also from tfr_multitaper
+    freqs : np.ndarray, shape (n_times, )
+        Frequency array over which tfr was calculated
+    ch_idx : integer, option, default: 0
+        Index of channel to plot
+    vmin : scalar, optional, default: tfr.min()
+        Minimum of colorbar
+    vmax : scalra, optional, default: tfr.max()
+        Maximum of colorbar
+    x_label: string, optional, default: 'Time (s)'
+        Label for x-axis (i.e., time axis)
+    y_label: string, optional, default: 'Frequency (Hz)'
+        Label for y-axis (i.e., frequency axis)
+    colorbar: boolean, optional, default: False
+        Whether to show colorbar
+    cmap : string, optional, default: 'RdBu_r'
+        matplotlib.colors.Colormap object name
+    title: string, optional, default: None
+        Title for the plot
+
+    Returns
+    -------
+
+    """
 
     if vmin is None:
         vmin = tfr.min()
