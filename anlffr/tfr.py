@@ -344,7 +344,7 @@ def rescale(data, times, baseline, mode, verbose=None, copy=True):
 
 
 def plot_tfr(tfr, times, freqs, ch_idx=0, vmin=None, vmax=None, ylim=None,
-             vline=None, x_label=None, y_label=None,
+             vline=None, x_label='Time (s)', y_label='Frequency (Hz)',
              colorbar=False, cmap='RdBu_r', title=None):
     """ Aux function to show time-freq map on topo """
 
