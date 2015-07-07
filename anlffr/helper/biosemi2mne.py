@@ -104,8 +104,7 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
             hptsname = 'biosemi64'
             montage = read_montage(kind=hptsname, path=hptspath,
                                    transform=True)
-            misc = ['EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6',
-                    'EXG7', 'EXG8']
+            misc = ['EXG3', 'EXG4', 'EXG5', 'EXG6', 'EXG7', 'EXG8']
         else:
             if nchans == 2:
                 logger.info('Number of channels is 2.'
@@ -118,8 +117,7 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
                 hptsname = 'biosemi32'
                 montage = read_montage(kind=hptsname, path=hptspath,
                                        transform=True)
-                misc = ['EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6',
-                        'EXG7', 'EXG8']
+                misc = ['EXG3', 'EXG4', 'EXG5', 'EXG6', 'EXG7', 'EXG8']
 
     misc += extrachans
     raw = edf.read_raw_edf(bdfname, montage=montage, preload=True,
