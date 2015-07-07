@@ -23,7 +23,6 @@ warnings.simplefilter('default')
 
 
 class deprecated(object):
-
     """Decorator to mark a function or class as deprecated.
 
     Issue a warning when the function is called/the class is instantiated and
@@ -35,10 +34,11 @@ class deprecated(object):
 
     >>> from mne.utils import deprecated
     >>> deprecated() # doctest: +ELLIPSIS
-    <mne.utils.deprecated object at ...>
+    <anlffr.utils.deprecated object at ...>
 
     >>> @deprecated()
     ... def some_function(): pass
+
     """
     # Adapted from http://wiki.python.org/moin/PythonDecoratorLibrary,
     # but with many changes.
@@ -238,7 +238,7 @@ def set_log_level(verbose=None, return_old_level=False):
         logging_types = dict(DEBUG=logging.DEBUG, INFO=logging.INFO,
                              WARNING=logging.WARNING, ERROR=logging.ERROR,
                              CRITICAL=logging.CRITICAL)
-        if not verbose in logging_types:
+        if verbose not in logging_types:
             raise ValueError('verbose must be of a valid type')
         verbose = logging_types[verbose]
     logger = logging.getLogger('anlffr')

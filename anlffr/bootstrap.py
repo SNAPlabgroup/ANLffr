@@ -16,12 +16,7 @@ import platform
 
 @verbose_decorator
 def bootfunc(inputFunction, x, params, verbose=True):
-    """
-    Performs bootstrapping over trials for spectral functions, utilizing
-    multiple cores (threads) for a speed increase. Designed to work with the
-    spectral analysis functions provided in ANLffr, but in theory should work
-    with any function that takes 3D numpy arrays and a suitable params
-    structure as inputs.
+    """Performs bootstrapping over trials for spectral functions.
 
     Inputs
     ------
@@ -57,33 +52,36 @@ def bootfunc(inputFunction, x, params, verbose=True):
     function outputs, level 2 keys correspond to individual draw results, mean
     of draw results, and variance of draw results for each key in level 1.
 
-    Example usage
-    -------
-    # package imports
-    from anlffr import bootstrap
-    from anlffr import spectral
+    Examples
+    --------
+    Just a simple illustration of usage.
 
-    # run spectral.generate_params
-    params = spectral.generate_params(...,
-                                      threads = 4,
-                                      nPerDraw = 250,
-                                      nDraws = 100)
+    >>> # Package imports and initialize parameters
+    >>> from anlffr import bootstrap, spectral
+    >>> params = spectral.generate_params(...,
+                                         threads = 4,
+                                         nPerDraw = 250,
+                                         nDraws = 100)
 
-    # load preprocessed data sets with 3D arrays nPerDraw is 250, so will
-    # select 125 trials from each of these mat files
-    positivePolarityData = io.loadmat(...)['data']
-    negativePolarityData = io.loadmat(...)['data']
+    >>> # load preprocessed data sets with 3D arrays nPerDraw is 250, so will
+    >>> # select 125 trials from each of these mat files
+    >>> positivePolarityData = io.loadmat(...)['data']
+    >>> negativePolarityData = io.loadmat(...)['data']
 
-    # create a list of data
-    dataList = [positivePolaritydata, negativePolaritydata]
+    >>> # create a list of data
+    >>> dataList = [positivePolaritydata, negativePolaritydata]
 
-    # run the boostrap function
-    results = bootstrap.bootfunc(spectral.mtcpca_complete, dataList, params)
-
-    ###
+    >>> # run the boostrap function
+    >>> results = bootstrap.bootfunc(spectral.mtcpca_complete, dataList,
+                                     params)
 
     Notes
     -------
+    Utilizes multiple cores (threads) for a speed increase.
+    Designed to work with the spectral analysis functions provided in ANLffr,
+    but in theory should work with any function that takes 3D numpy arrays
+    and a suitable params structure as inputs.
+
     Bootstrapping is not implemented in a particularly clever or elegant way -
     it's an "emarassingly parallel" problem, and thus was coded in the
     bare-minimum fashion so that boostrap computations can proceed in parallel

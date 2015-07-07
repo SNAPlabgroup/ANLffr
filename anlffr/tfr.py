@@ -222,7 +222,7 @@ def tfr_multitaper(data, sfreq, frequencies, time_bandwidth=4.0,
         Induced power. Squared amplitude of time-frequency coefficients.
     itc : np.ndarray, shape (n_channels, n_frequencies, n_times)
         Phase locking value.
-    times: np.ndarray, shape (n_times, )
+    times : np.ndarray, shape (n_times, )
          Time vector for convenience based on n_times, sfreq and decim
 
     """
@@ -289,7 +289,7 @@ def rescale(data, times, baseline, mode, verbose=None, copy=True):
 
     Returns
     -------
-    data_scaled: array
+    data_scaled : array
         Array of same shape as data after rescaling.
     """
     if copy:
@@ -362,15 +362,15 @@ def plot_tfr(tfr, times, freqs, ch_idx=0, vmin=None, vmax=None,
         Minimum of colorbar
     vmax : scalra, optional, default: tfr.max()
         Maximum of colorbar
-    x_label: string, optional, default: 'Time (s)'
+    x_label : string, optional, default: 'Time (s)'
         Label for x-axis (i.e., time axis)
-    y_label: string, optional, default: 'Frequency (Hz)'
+    y_label : string, optional, default: 'Frequency (Hz)'
         Label for y-axis (i.e., frequency axis)
-    colorbar: boolean, optional, default: False
+    colorbar : boolean, optional, default: False
         Whether to show colorbar
     cmap : string, optional, default: 'RdBu_r'
         matplotlib.colors.Colormap object name
-    title: string, optional, default: None
+    title : string, optional, default: None
         Title for the plot
 
     Returns
