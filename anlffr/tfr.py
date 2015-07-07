@@ -224,6 +224,7 @@ def tfr_multitaper(data, sfreq, frequencies, time_bandwidth=4.0,
         Phase locking value.
     times: np.ndarray, shape (n_times, )
          Time vector for convenience based on n_times, sfreq and decim
+
     """
     n_epochs, n_channels, n_times = data[:, :, ::decim].shape
     logger.info('Data is %d trials and %d channels', n_epochs, n_channels)
@@ -251,7 +252,7 @@ def tfr_multitaper(data, sfreq, frequencies, time_bandwidth=4.0,
             itc[c, :, :] += itc_c
     psd /= n_taps
     itc /= n_taps
-    times = np.arange(n_times) / sfreq
+    times = np.arange(n_times) / np.float(sfreq)
     return psd, itc, times
 
 
@@ -340,3 +341,28 @@ def rescale(data, times, baseline, mode, verbose=None, copy=True):
         logger.info("No baseline correction applied...")
 
     return data
+
+
+def plot_tfr(tfr, times, freqs, ch_idx=0, vmin=None, vmax=None, ylim=None,
+             vline=None, x_label=None, y_label=None,
+             colorbar=False, cmap='RdBu_r', title=None):
+    """ Aux function to show time-freq map on topo """
+
+    if vmin is None:
+        vmin = tfr.min()
+
+    if vmax is None:
+        vmax = tfr.max()
+
+    import matplotlib.pyplot as plt
+    extent = (times[0], times[-1], freqs[0], freqs[-1])
+    plt.imshow(tfr[ch_idx], extent=extent, aspect="auto", origin="lower",
+               vmin=vmin, vmax=vmax, cmap=cmap)
+    if x_label is not None:
+        plt.xlabel(x_label)
+    if y_label is not None:
+        plt.ylabel(y_label)
+    if colorbar:
+        plt.colorbar()
+    if title:
+        plt.title(title)
