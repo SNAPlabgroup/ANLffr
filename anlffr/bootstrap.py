@@ -97,7 +97,7 @@ def bootfunc(inputFunction, x, params, verbose=True):
     cheap, so this shouldn't be too much of a concern. But if you want
     something more memory efficient, go code it yourself.
 
-    Last updated: 10/05/2014
+    Last updated: 07/15/2015
     Auditory Neuroscience Laboratory, Boston University
     Contact: lennyv@bu.edu
     """
@@ -206,7 +206,6 @@ def bootfunc(inputFunction, x, params, verbose=True):
         output[k]['bootVariance'] = _compute_variance(output[k]['bootMean'],
                                                       results[k]['runningSS'],
                                                       params['nDraws'])
-    output['trialsUsed'] = list(trialsUsed)
 
     if frequencyVector is not None:
         output['f'] = frequencyVector
