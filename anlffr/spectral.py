@@ -146,7 +146,7 @@ def mtplv(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
+        xw = sci.fft(tap * x, n=nfft, axis=timedim)
 
         if(params['itc'] == 0):
             plvtap[k, :, :] = abs((xw/abs(xw)).mean(axis=trialdim))**2
@@ -243,7 +243,7 @@ def mtspec(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
+        xw = sci.fft(tap * x, n=nfft, axis=timedim)
 
         S[k, :, :] = abs(xw.mean(axis=trialdim))
 
@@ -351,7 +351,7 @@ def mtphase(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
+        xw = sci.fft(tap * x, n=nfft, axis=timedim)
         Ph[k, :, :] = np.angle(xw.mean(axis=trialdim))
 
     # Average over tapers and squeeze to pretty shapes
@@ -427,7 +427,7 @@ def mtcpca(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
+        xw = sci.fft(tap * x, n=nfft, axis=timedim)
 
         if params['itc']:
             C = (xw.mean(axis=trialdim) /
@@ -519,7 +519,7 @@ def mtcspec(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
+        xw = sci.fft(tap * x, n=nfft, axis=timedim)
         C = (xw.mean(axis=trialdim)).squeeze()
         for fi in np.arange(0, nfft):
             Csd = np.outer(C[:, fi], C[:, fi].conj())
@@ -613,7 +613,7 @@ def mtcpca_timeDomain(x, params, verbose=None, bootstrapMode=False):
 
     cpc_freq = np.zeros(nfft, dtype=np.complex)
     cspec = np.zeros(nfft)
-    xw = np.fft.rfft(w * x, n=nfft, axis=timedim)
+    xw = sci.fft(w * x, n=nfft, axis=timedim)
     C = (xw.mean(axis=trialdim)).squeeze()
     Cnorm = C / ((abs(xw).mean(axis=trialdim)).squeeze())
     for fi in np.arange(0, nfft):
@@ -966,7 +966,7 @@ def mtppc(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
+        xw = sci.fft(tap * x, n=nfft, axis=timedim)
 
         npairs = params['nPairs']
         trial_pairs = np.random.randint(0, ntrials, (npairs, 2))
@@ -1080,7 +1080,7 @@ def mtspecraw(x, params, verbose=None, bootstrapMode=False):
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
-        xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
+        xw = sci.fft(tap * x, n=nfft, axis=timedim)
         Sraw[k, :, :] = (abs(xw)**2).mean(axis=trialdim)
 
     # Average over tapers and squeeze to pretty shapes
@@ -1165,7 +1165,7 @@ def mtpspec(x, params, verbose=None, bootstrapMode=False):
     for ch in np.arange(0, nchans):
         for k, tap in enumerate(w):
             logger.debug('Running Channel # %d, taper #%d', ch, k)
-            xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
+            xw = sci.fft(tap * x, n=nfft, axis=timedim)
             npairs = params['Npairs']
             trial_pairs = np.random.randint(0, ntrials, (npairs, 2))
 
@@ -1338,11 +1338,10 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
                 plvCsd = np.outer(plvC[:, fi], plvC[:, fi].conj())
                 plvEigenvals = linalg.eigh(plvCsd, eigvals_only=True)
                 plv[k, fi] = plvEigenvals[-1] / nchans
-                
+
                 itcCsd = np.outer(itcC[:, fi], itcC[:, fi].conj())
                 itcEigenvals = linalg.eigh(itcCsd, eigvals_only=True)
                 itc[k, fi] = itcEigenvals[-1] / nchans
-                
 
         # Avage over tapers and squeeze to pretty shapes
         mtcpcaSpectrum = (cspec.mean(axis=0)).squeeze()
@@ -1350,7 +1349,7 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
         mtcpcaInterTrialCoherence = (itc.mean(axis=0)).squeeze()
 
         if (mtcpcaSpectrum.shape != mtcpcaPhaseLockingValue.shape or
-            mtcpcaSpectrum.shape != mtcpcaInterTrialCoherence.shape):
+           mtcpcaSpectrum.shape != mtcpcaInterTrialCoherence.shape):
             logger.error('internal error: shape mismatch between PLV/ITC ' +
                          ' and magnitude result arrays')
 
@@ -1363,9 +1362,9 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
         return out
     else:
         S = {}
-        S['spectrum'] = ['mtcpcaSpectrum_normalPhase']
-        S['plv'] = ['mtcpcaPLV_normalPhase']
-        S['itc'] = ['mtcpcaITC_normalPhase']
+        S['spectrum'] = out['mtcpcaSpectrum_normalPhase']
+        S['plv'] = out['mtcpcaPLV_normalPhase']
+        S['itc'] = out['mtcpcaITC_normalPhase']
 
         N = {}
         N['spectrum'] = out['mtcpcaSpectrum_noiseFloorViaPhaseFlip']
@@ -1396,7 +1395,6 @@ def _get_freq_stuff(x, params, timeDim=2, verbose=None):
     else:
         nfft = int(params['nfft'])
 
-    #f = (np.arange(0.0, nfft, 1.0) * params['Fs'] / nfft)
     f = np.linspace(0.0, params['Fs'] / 2.0, nfft/2+1)
     fInd = ((f >= params['fpass'][0]) & (f <= params['fpass'][1]))
 
