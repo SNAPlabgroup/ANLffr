@@ -1374,6 +1374,90 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
         return (S, N, f)
 
 
+def mtcspec_induced(x, params, verbose=None, bootstrapMode=False):
+    """Multitaper complex PCA and power spectral estimate
+
+    Parameters
+    ----------
+    x - NumPy Array
+        Input data (channel x trial x time)
+
+    params - Dictionary of parameter settings
+      params['Fs'] - sampling rate
+
+      params['tapers'] - [TW, Number of tapers]
+
+      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
+
+      params['itc'] - 1 for ITC, 0 for PLV
+
+    verbose : bool, str, int, or None
+        The verbosity of messages to print. If a str, it can be either DEBUG,
+        INFO, WARNING, ERROR, or CRITICAL.
+
+    Returns
+    -------
+    In normal mode:
+        Tuple (cspec, f):
+
+          cspec - Multitapered (induced) spectrum estimate using cPCA
+
+          f - Frequency vector matching spectrum
+
+    In bootstrap mode:
+        Dictionary with the following keys:
+
+          mtcspec_induced - Multitapered PLV estimate using cPCA
+
+          f - Frequency vector matching plv
+    """
+
+    logger.info('Running Multitaper Complex PCA based power estimation!')
+    x = x.squeeze()
+    if(len(x.shape) == 3):
+        timedim = 2
+        trialdim = 1
+        ntrials = x.shape[trialdim]
+        nchans = x.shape[0]
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
+    else:
+        logger.error('Sorry! The data should be a 3 dimensional array!')
+
+    # Calculate the tapers
+    nfft, f, fInd = _get_freq_stuff(x, params, timedim)
+    ntaps = params['tapers'][1]
+    TW = params['tapers'][0]
+    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
+
+    # Make space for the PLV result
+
+    cspec = np.zeros((ntaps, ntrials, nfft))
+
+    for k, tap in enumerate(w):
+        logger.info('Doing Taper #%d', k)
+        xw = sci.fft(tap * x, n=nfft, axis=timedim)
+        # C = (xw.mean(axis=trialdim)).squeeze()
+        for tr in np.arange(0, xw.shape[trialdim]):
+            for fi in np.arange(0, nfft):
+                Csd = np.outer(xw[:, tr, fi], xw[:, tr, fi].conj())
+                vals = linalg.eigh(Csd, eigvals_only=True)
+                cspec[k, tr, fi] = vals[-1] / nchans
+
+    # Average over tapers, then trials, and squeeze to pretty shapes
+    cspec = (cspec.mean(axis=0, keepdims=True).mean(axis=1)).squeeze()
+    cspec = cspec[fInd]
+
+    if bootstrapMode:
+        out = {}
+        out['mtcspec_induced'] = cspec
+        out['f'] = f
+
+        return out
+    else:
+        return (cspec, f)
+
+
 @verbose_decorator
 def _get_freq_stuff(x, params, timeDim=2, verbose=None):
     '''
