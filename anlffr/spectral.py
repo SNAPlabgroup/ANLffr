@@ -1432,22 +1432,21 @@ def mtcspec_induced(x, params, verbose=None, bootstrapMode=False):
 
     # Make space for the PLV result
 
-    cspec = np.zeros((ntaps, ntrials, nfft))
+    cspec = np.zeros((ntaps, ntrials, len(fInd)))
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
         xw = sci.fft(tap * x, n=nfft, axis=timedim)
+        xw = xw[:, :, fInd]
         # C = (xw.mean(axis=trialdim)).squeeze()
         for tr in np.arange(0, xw.shape[trialdim]):
-            for fi in np.arange(0, nfft):
+            for fi in range(xw.shape[timedim]):
                 Csd = np.outer(xw[:, tr, fi], xw[:, tr, fi].conj())
                 vals = linalg.eigh(Csd, eigvals_only=True)
                 cspec[k, tr, fi] = vals[-1] / nchans
 
     # Average over tapers, then trials, and squeeze to pretty shapes
     cspec = (cspec.mean(axis=0, keepdims=True).mean(axis=1)).squeeze()
-    cspec = cspec[fInd]
-
     if bootstrapMode:
         out = {}
         out['mtcspec_induced'] = cspec
