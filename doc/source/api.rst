@@ -25,8 +25,16 @@ ANLffr Function Reference
     :undoc-members:
     :show-inheritance:
     
+:mod:`tfr` Module
+-----------------
+
+.. automodule:: anlffr.tfr
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`bootstrap` Module
-----------------------
+-----------------------
 
 .. automodule:: anlffr.bootstrap
     :members:

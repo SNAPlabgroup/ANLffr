@@ -11,47 +11,47 @@ estimates by combining across channels (via the cPCA method described in [1]).
 The accompanying bootsrap module provides support for bootstrapping any of the
 analysis functions in this module.
 
-Function Listing:
+Function Listing
+================
+Per-channel functions:
+--------------------------------------
 
-    Per-channel functions:
-    --------------------------------------
+    mtplv
 
-        mtplv
+    mtspec
 
-        mtspec
+    mtphase
 
-        mtphase
+    mtppc
 
-        mtppc
+    mtspecraw
 
-        mtspecraw
-
-        mtpspec
+    mtpspec
 
 
-    Multichannel functions utilizing cPCA:
-    --------------------------------------
+Multichannel functions utilizing cPCA:
+--------------------------------------
 
-        mtcplv (alias for mtcpca)
+    mtcplv (alias for mtcpca)
 
-        mtcspec
+    mtcspec
 
-        mtcpca_timeDomain
+    mtcpca_timeDomain
 
-    NOTE: Due to the poor SNR of individual trials typical in FFR datasets,
-    cPCA-based methods implemented in this module first compute the parameter
-    of interest on a per-channel basis, then computes the cross-spectral
-    densities over channels. We point out that this is different from what a
-    strict interpretation of the notation in the equations in [1] suggests.
-    Computation of the cross-spectral density on a per-trial basis will
-    emphasize features that are phase-locked across channels (e.g., noise). For
-    FFRs, the contributions of activity phase locked over channels but not over
-    trials will swamp peaks in the resulting output metric, particularly at low
-    frequencies.
+NOTE: Due to the poor SNR of individual trials typical in FFR datasets,
+cPCA-based methods implemented in this module first compute the parameter
+of interest on a per-channel basis, then computes the cross-spectral
+densities over channels. We point out that this is different from what a
+strict interpretation of the notation in the equations in [1] suggests.
+Computation of the cross-spectral density on a per-trial basis will
+emphasize features that are phase-locked across channels (e.g., noise). For
+FFRs, the contributions of activity phase locked over channels but not over
+trials will swamp peaks in the resulting output metric, particularly at low
+frequencies.
 
 
 References:
---------------------------------------
+=======================================
 
 [1] Bharadwaj, H and Shinn-Cunningham, BG (2014).
       "Rapid acquisition of auditory subcortical steady state responses using
@@ -60,6 +60,7 @@ References:
       http://dx.doi.org/10.1016/j.clinph.2014.01.011
 
 @author: Hari Bharadwaj
+
 """
 
 import numpy as np
