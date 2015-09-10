@@ -38,6 +38,8 @@ Multichannel functions utilizing cPCA:
 
     mtcpca_timeDomain
 
+    mtcpca_all
+
 NOTE: Due to the poor SNR of individual trials typical in FFR datasets,
 cPCA-based methods implemented in this module first compute the parameter
 of interest on a per-channel basis, then computes the cross-spectral
@@ -67,15 +69,7 @@ import numpy as np
 from math import ceil
 import scipy as sci
 from scipy import linalg
-
-# use nitime if available:
-try:
-    from nitime.algorithms import dpss_windows
-    print '\nnitime detected. Using nitime.algorithms.dpss_windows\n'
-except ImportError:
-    from .dpss import dpss_windows
-    print '\nnitime not detected. Using anlffr.dpss.dpss_windows\n'
-
+from .dpss import dpss_windows
 # rename verbose to make pep8/pylint checkers stop complainig
 from .utils import logger, deprecated, verbose as verbose_decorator
 
@@ -1196,9 +1190,9 @@ def mtpspec(x, params, verbose=None, bootstrapMode=False):
 
 
 @verbose_decorator
-def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
+def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     """
-    Internal convenience function to obtain plv and spectrum with cpca and
+    Convenience function to obtain plv, itc, and spectrum with cpca and
     multitaper.  Equivalent to calling:
 
     spectral.mtcpca(data, params, ...) with ITC = 0
@@ -1207,7 +1201,8 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
 
     With the exception that this function returns a dictionary for S + N, each
     of which have keys "plv_*" and "spectrum_*", where * is "normalPhase" or
-    "noiseFloorViaPhaseFlip".
+    "noiseFloorViaPhaseFlip" (which obtains the "noise floor" by flipping the
+    phase of alternate trials and running the computations)
 
     Gets power spectra and plv on the same set of data using multitaper and
     complex PCA. Returns a noise floor esimate of each by running the same
@@ -1217,10 +1212,6 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
     similar, while the PLV values for the half-trials-flipped data should be
     hovering near the PLV value of off-frequency components in the original
     data.
-
-    Primarily useful when debugging, bootstrapping, or when using scripts that
-    for some reason randomizes data in between calls to mtcpca and mtcspec.
-
 
     Parameters
     ----------
@@ -1375,8 +1366,12 @@ def _mtcpca_complete(x, params, verbose=None, bootstrapMode=False):
         return (S, N, f)
 
 
-def mtcspec_induced(x, params, verbose=None, bootstrapMode=False):
+def mtcspec_singletrials(x, params, verbose=None, bootstrapMode=False):
     """Multitaper complex PCA and power spectral estimate
+
+    Done on a single-trial basis as opposed to the average
+
+    Warning: Untested
 
     Parameters
     ----------
@@ -1450,7 +1445,7 @@ def mtcspec_induced(x, params, verbose=None, bootstrapMode=False):
     cspec = (cspec.mean(axis=0, keepdims=True).mean(axis=1)).squeeze()
     if bootstrapMode:
         out = {}
-        out['mtcspec_induced'] = cspec
+        out['mtcspec_singletrials'] = cspec
         out['f'] = f
 
         return out

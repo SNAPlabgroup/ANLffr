@@ -71,7 +71,7 @@ def bootfunc(inputFunction, x, params, verbose=True):
     >>> dataList = [positivePolaritydata, negativePolaritydata]
 
     >>> # run the boostrap function
-    >>> results = bootstrap.bootfunc(spectral.mtcpca_complete, dataList,
+    >>> results = bootstrap.bootfunc(spectral._mtcpca_complete, dataList,
                                      params)
 
     Notes
@@ -190,9 +190,10 @@ def bootfunc(inputFunction, x, params, verbose=True):
                 raise
 
     # ensure the queue is empty:
-    if int(theQueue.qsize()) > 0:
-        logger.error('Internal error: retrieved all data, but Queue is ' +
-                     'nonempty: {}'.format(int(theQueue.qsize())))
+    # Note: this results in a bug on osx because qsize not implemented
+    # if int(theQueue.qsize()) > 0:
+    #     logger.error('Internal error: retrieved all data, but Queue is ' +
+    #                  'nonempty: {}'.format(int(theQueue.qsize())))
 
     for k in usefulKeys:
         output[k] = {}
