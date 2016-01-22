@@ -125,7 +125,7 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
 
     # Rereference
     if refchans is not None:
-        print 'Re-referencing data to', refchans
+        sys.stdout.write('Re-referencing data to: ' + ' '.join(refchans))
         (raw, ref_data) = set_eeg_reference(raw, refchans, copy=False)
         raw.info['bads'] += refchans
     else:

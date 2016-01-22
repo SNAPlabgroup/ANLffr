@@ -1588,8 +1588,6 @@ def generate_parameters(verbose=True, **kwArgs):
     logger.info('returnIndividualBootstrapResults = {}'.format(
         params['returnIndividualBootstrapResults']))
 
-    print '\n'
-
     return params
 
 
