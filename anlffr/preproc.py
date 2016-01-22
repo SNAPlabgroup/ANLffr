@@ -14,7 +14,7 @@ from mne.filter import band_pass_filter
 
 @verbose
 def find_blinks(raw, event_id=998, thresh=100e-6, l_freq=0.5, h_freq=10,
-                filter_length='10s', ch_name='A1', tstart=0.,
+                filter_length='10s', ch_name=['A1', ], tstart=0.,
                 l_trans_bandwidth=0.15):
 
     """Utility function to detect blink events from specified channel.
@@ -31,7 +31,7 @@ def find_blinks(raw, event_id=998, thresh=100e-6, l_freq=0.5, h_freq=10,
         High pass frequency.
     filter_length : str | int | None
         Number of taps to use for filtering.
-    ch_name: str | None
+    ch_name: list | None
         If not None, use specified channel(s) for EOG
     tstart : float
         Start detection after tstart seconds.
@@ -84,7 +84,7 @@ def find_blinks(raw, event_id=998, thresh=100e-6, l_freq=0.5, h_freq=10,
     eog_events = np.c_[eog_events, np.zeros(n_events),
                        event_id * np.ones(n_events)]
 
-    return eog_events
+    return np.int64(eog_events)
 
 
 @verbose
@@ -190,8 +190,8 @@ def peak_finder(x0, thresh=None, extrema=1, verbose=None):
             ii += 1  # This is a peak
             # Reset peak finding if we had a peak and the next peak is bigger
             # than the last or the left min was small enough to reset.
-            if found_peak and ((x[ii] > peak_mag[-1])
-                               or (left_min < peak_mag[-1] - thresh)):
+            if found_peak and ((x[ii] > peak_mag[-1]) or
+                               (left_min < peak_mag[-1] - thresh)):
                 temp_mag = min_mag
                 found_peak = False
 
