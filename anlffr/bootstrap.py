@@ -308,10 +308,10 @@ def _compute_thread_split(params, verbose=None):
 
         if distribute != 0:
             for _ in range(params['threads']):
-                drawSplit.append(distribute)
+                drawSplit.append(int(distribute))
 
             for r in range(leftover):
-                drawSplit[r] = drawSplit[r] + 1
+                drawSplit[r] = int(drawSplit[r] + 1)
         else:
             for _ in range(int(params['nDraws'])):
                 drawSplit.append(1)
