@@ -17,6 +17,11 @@ logger = logging.getLogger('anlffr')  # Used across all code
 logger.propagate = False  # What to do in case of multiple imports
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
 
 # force show of DeprecationWarning even on python 2.7
 warnings.simplefilter('default')
