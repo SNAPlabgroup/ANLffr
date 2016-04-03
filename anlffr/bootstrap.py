@@ -23,20 +23,19 @@ def bootfunc(inputFunction, x, params, verbose=True):
     argument. Function must return a dictionary.
 
     x - a 3D numpy array or list/tuple of 3D numpy arrays (note: must be chan x
-    trial x time). If list/tuple with N elements, an equal number of trials
-    will be selected from each pool. Those will then be sampled with
-    replacement to obtain bootstrapped mean/variance, i.e., results will be
-    computed by combining nPerDraw/N trials from each pool per bootstrap
-    repetition. An example use case is to sample an equal number of trials from
-    positive and negative polarity FFR trials.
+    trial x time). If list/tuple with N elements, an equal number of trials M
+    will be selected from each pool at random without replacement, based on the
+    minimum number of trials available in eahc pool. Those will then be sampled
+    with replacement to obtain bootstrapped mean/variance, i.e., results will
+    be computed by combining M from each pool per bootstrap repetition. An
+    example use case is to sample an equal number of trials from positive and
+    negative polarity FFR trials.
 
     params - dictionary of parameters. The following fields are required for
     boostrapping, but others may be required based on the specifics of
     inputFunction:
 
           params['nDraws'] - number of draws for bootstrapping
-
-          params['nPerDraw'] - number of trials per draw for bootstrapping
 
           params['threads'] - number of threads to spawn; only really useful if
           a multi-core CPU is available. When a multi-core CPU is available,
@@ -57,11 +56,8 @@ def bootfunc(inputFunction, x, params, verbose=True):
     >>> from anlffr import bootstrap, spectral
     >>> params = spectral.generate_params(...,
                                          threads = 4,
-                                         nPerDraw = 250,
                                          nDraws = 100)
 
-    >>> # load preprocessed data sets with 3D arrays nPerDraw is 250, so will
-    >>> # select 125 trials from each of these mat files
     >>> positivePolarityData = io.loadmat(...)['data']
     >>> negativePolarityData = io.loadmat(...)['data']
 
@@ -99,7 +95,7 @@ def bootfunc(inputFunction, x, params, verbose=True):
 
     _validate_bootstrap_params(params)
 
-    sanitizedData = _equate_data(x, params)
+    sanitizedData, nTrialsUsed = _equate_data(x, params)
 
     startTime = time.time()
     theQueue = multiprocessing.Queue()
@@ -170,7 +166,7 @@ def bootfunc(inputFunction, x, params, verbose=True):
                     results[k]['indivDraw'].append(retrievedData[0][k])
 
                 results[k]['runningSum'] += retrievedData[0][k]
-                results[k]['runningSS'] += retrievedData[0][k]**2
+                results[k]['runningSS'] += retrievedData[0][k]**2.0
 
             trialsUsed.append(retrievedData[1])
 
@@ -192,7 +188,7 @@ def bootfunc(inputFunction, x, params, verbose=True):
     for k in usefulKeys:
         output[k] = {}
         output[k]['nDraws'] = int(params['nDraws'])
-        output[k]['nPerDraw'] = int(params['nPerDraw'])
+        output[k]['nPerDraw'] = nTrialsUsed 
         if params['returnIndividualBootstrapResults']:
             output[k]['indivDraw'] = np.array(results[k]['indivDraw'])
         output[k]['bootMean'] = results[k]['runningSum'] / params['nDraws']
@@ -255,7 +251,7 @@ def _select_trials_with_replacement(inputData,
         randomState = np.random.RandomState()
 
     numPools = len(inputData)
-    useTrialsPerPool = int(params['nPerDraw']) / numPools
+    useTrialsPerPool = inputData[0].shape[1]
 
     tempData = []
     pickTrials = []
@@ -334,9 +330,10 @@ def _equate_data(inputData, params):
     for x in inputData:
         poolSizes.append(x.shape[1])
 
-    poolSizes.append(int(params['nPerDraw'] / len(inputData)))
-
     minimumAcrossPools = min(poolSizes)
+
+    if minimumAcrossPools % 2 == 1:
+        minimumAcrossPols -= 1
 
     # make sure the user knows this is what is going on
     warnStr1 = ('Selecting {} per pool '.format(minimumAcrossPools) +
@@ -361,7 +358,7 @@ def _equate_data(inputData, params):
         randomOrder = randomOrder[0:minimumAcrossPools]
         validatedData.append(x[:, randomOrder, :])
 
-    return validatedData
+    return validatedData, minimumAcrossPools*len(inputData)
 
 
 @verbose_decorator
@@ -383,15 +380,6 @@ def _validate_bootstrap_params(params, verbose=True):
 
     if params['nDraws'] != int(params['nDraws']):
         logger.error('params[''nDraws''] must be an integer')
-
-    if 'nPerDraw' in params:
-        if params['nPerDraw'] != int(params['nPerDraw']):
-            logger.error('params[''nPerDraw''] must be an integer')
-
-        if params['nPerDraw'] <= 0:
-            logger.error('params[''nPerDraw''] must be positive')
-    else:
-        logger.info('selecting min number of trials per pool')
 
     if platform.system() == 'Windows':
         logger.warn('Windows system detected...' +
