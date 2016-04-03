@@ -147,13 +147,7 @@ def bootfunc(inputFunction, x, params, verbose=True):
             # only need to retrieve frequency vector once
             # otherwise remove it from key values to store
             if 'f' in usefulKeys:
-                if 1 == numRetrieved:
-                    frequencyVector = retrievedData[0]['f']
-                else:
-                    if np.any(frequencyVector != retrievedData[0]['f']):
-                        logger.error('Internal error: ' +
-                                     'frequency axes are different ' +
-                                     'across draws')
+                frequencyVector = retrievedData[0]['f']
                 usefulKeys.remove('f')
 
             # now run through the other keys and store the results
