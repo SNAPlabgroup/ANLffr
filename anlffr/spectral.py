@@ -1289,7 +1289,6 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     useData = x
 
     for k, tap in enumerate(w):
-        logger.info(thisType + 'Doing Taper #%d', k)
 
         xw = np.fft.rfft((tap * useData), n=nfft, axis=timedim)
 
