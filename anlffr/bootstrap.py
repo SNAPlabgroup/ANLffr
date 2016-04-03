@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Bootstrap helper functions for FFR data
-
-@author: Lenny Varghese
 """
 import numpy as np
 import time
@@ -92,17 +90,16 @@ def bootfunc(inputFunction, x, params, verbose=True):
 
     The data array is copied in memory for each core that is utilized, and will
     thus eat quite a bit of RAM when more than 1-2 threads are spawned. RAM is
-    cheap, so this shouldn't be too much of a concern. But if you want
-    something more memory efficient, go code it yourself.
+    cheap, so this shouldn't be too much of a concern.
 
-    Last updated: 07/15/2015
+    Last updated: 2016-04-03
     Auditory Neuroscience Laboratory, Boston University
     Contact: lennyv@bu.edu
     """
 
     _validate_bootstrap_params(params)
 
-    sanitizedData = _validate_data(x, params)
+    sanitizedData = _equate_data(x, params)
 
     startTime = time.time()
     theQueue = multiprocessing.Queue()
@@ -123,16 +120,13 @@ def bootfunc(inputFunction, x, params, verbose=True):
 
         if platform.system() != 'Windows':
             processList.append(
-                multiprocessing.Process(
-                    target=_multiprocess_wrapper,
-                    args=(inputFunction,
-                          sanitizedData,
-                          params,
-                          drawSplit[proc],
-                          theQueue,
-                          randomState)
-                    )
-                )
+                multiprocessing.Process(target=_multiprocess_wrapper,
+                                        args=(inputFunction,
+                                              sanitizedData,
+                                              params,
+                                              drawSplit[proc],
+                                              theQueue,
+                                              randomState)))
 
             processList[proc].start()
         else:
@@ -215,14 +209,8 @@ def bootfunc(inputFunction, x, params, verbose=True):
 
 
 @verbose_decorator
-def _multiprocess_wrapper(
-        inputFunction,
-        inputData,
-        params,
-        nDraws,
-        resultsQueue,
-        randState,
-        verbose=True):
+def _multiprocess_wrapper(inputFunction, inputData, params, nDraws, 
+                          resultsQueue, randState, verbose=True):
     """
     internal function. places results from spectral functions in queue.
     """
@@ -275,10 +263,8 @@ def _select_trials_with_replacement(inputData,
 
     for pool in range(numPools):
 
-        randTrials = randomState.randint(
-            0,
-            inputData[pool].shape[1],
-            useTrialsPerPool)
+        randTrials = randomState.randint(0, inputData[pool].shape[1],
+                                         useTrialsPerPool)
 
         tempData.append(inputData[pool][:, randTrials, :])
         pickTrials.append(randTrials)
@@ -321,7 +307,7 @@ def _compute_thread_split(params, verbose=None):
     return drawSplit
 
 
-def _validate_data(inputData, params):
+def _equate_data(inputData, params):
     """
     shuffles the trials and ensures that each pool to draw from has the same
     number of trials by selecting the minimum number in common across all pools
@@ -345,17 +331,12 @@ def _validate_data(inputData, params):
 
     poolSizes = []
 
-    # select the smallest number in common between sizes of inputData and
-    # nPerDraw / len(inputData)
     for x in inputData:
         poolSizes.append(x.shape[1])
 
-    poolSizes.append(params['nPerDraw'] / len(inputData))
-    minimumAcrossPools = min(poolSizes)
+    poolSizes.append(int(params['nPerDraw'] / len(inputData)))
 
-    # make sure this is always an even number...everything is nicer that way
-    if minimumAcrossPools % 2 == 1:
-        minimumAcrossPools -= 1
+    minimumAcrossPools = min(poolSizes)
 
     # make sure the user knows this is what is going on
     warnStr1 = ('Selecting {} per pool '.format(minimumAcrossPools) +
@@ -394,26 +375,23 @@ def _validate_bootstrap_params(params, verbose=True):
         logger.warning('Python is running in 32 bit mode. ' +
                        'You may encounter out-of-memory issues.')
 
-    if ('nDraw' in params) or ('nPerDraw' in params):
-        if 'nDraws' not in params:
-            logger.error('when params[''nPerDraw''] is specified, ' +
-                         'params[''nDraw''] must be too')
+    if 'nDraws' not in params:
+        logger.error('params[''nDraw''] must be specified')
+        
+    if params['nDraws'] <= 0:
+        logger.error('params[''nDraws''] must be positive')
 
-        if 'nPerDraw' not in params:
-            logger.error('when params[''nDraws''] is specified, ' +
-                         'params[''nPerDraw''] must be too')
+    if params['nDraws'] != int(params['nDraws']):
+        logger.error('params[''nDraws''] must be an integer')
 
-        if params['nDraws'] != int(params['nDraws']):
-            logger.error('params[''nDraws''] must be an integer')
-
+    if 'nPerDraw' in params:
         if params['nPerDraw'] != int(params['nPerDraw']):
             logger.error('params[''nPerDraw''] must be an integer')
 
-        if params['nDraws'] <= 0:
-            logger.error('params[''nDraws''] must be positive')
-
         if params['nPerDraw'] <= 0:
             logger.error('params[''nPerDraw''] must be positive')
+    else:
+        logger.info('selecting min number of trials per pool')
 
     if platform.system() == 'Windows':
         logger.warn('Windows system detected...' +

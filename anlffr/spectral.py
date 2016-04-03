@@ -1234,26 +1234,28 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     Returns
     -------
     In normal mode:
-        Tuple (S, N, f)
+        Tuple (S, f)
 
-        Where S and N are data for signal and for noise floor, respectively,
-        each as a dictionary with the following keys:
+        Where S is a dictionary with the following keys:
 
-          mtcpcaSpectrum - Multitapered power spectral estimate using cPCA
+          spectrum - Multitapered power spectral estimate using cPCA
 
-          mtcpcaPLV- Multitapered PLV using cPCA
+          plv - Multitapered PLV using cPCA
+          
+          itc - Multitapered ITC using cPCA
 
         f - frequency vector
 
     In bootstrap mode:
         dictionary with keys:
-          mtcpcaSpectrum_* - Multitapered power spectral estimate using cPCA
+          spectrum - Multitapered power spectral estimate using cPCA
 
-          mtcpcaPLV_*- Multitapered PLV using cPCA
+          plv- Multitapered PLV using cPCA
+          
+          itc - Multitapered power spectral estimate using cPCA
 
           f - frequency vector
 
-     where * in the above is the type of noise floor
     """
 
     out = {}
@@ -1282,175 +1284,68 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     plv = np.zeros((ntaps, len(f)))
     itc = np.zeros((ntaps, len(f)))
     cspec = np.zeros((ntaps, len(f)))
+    cspecST = np.zeros((ntaps, nTrials, len(f)))
 
-    phaseTypes = list(['normalPhase', 'noiseFloorViaPhaseFlip'])
-
-    for thisType in phaseTypes:
-        if thisType == 'noiseFloorViaPhaseFlip':
-            # flip the phase of every other trial
-            phaseFlipper = np.ones(x.shape)
-
-            # important change: when noise floor is computed, it will
-            # only select trials that were originally labeled as even-numbered
-            # this way, bootstrapped noise floors are where they would be
-            # expected to be rather than artificially low
-            if bootstrapMode and 'bootstrapTrialsSelected' in params:
-                flipTheseTrials = np.where(
-                    (params['bootstrapTrialsSelected'] % 2) == 0)
-            else:
-                flipTheseTrials = np.arange(0, x.shape[1], 2)
-
-            phaseFlipper[:, flipTheseTrials, :] = -1.0
-
-        elif thisType == 'normalPhase':
-            phaseFlipper = 1.0
-
-        useData = x * phaseFlipper
-
-        for k, tap in enumerate(w):
-            logger.info(thisType + 'Doing Taper #%d', k)
-
-            xw = np.fft.rfft((tap * useData), n=nfft, axis=timedim)
-
-            # no point keeping everything if fpass was already set
-            xw = xw[:, :, fInd]
-
-            C = xw.mean(axis=trialdim).squeeze()
-
-            itcC = (xw.mean(axis=trialdim) /
-                    (abs(xw).mean(axis=trialdim))).squeeze()
-
-            plvC = (xw / abs(xw)).mean(axis=trialdim).squeeze()
-
-            for fi in np.arange(0, len(f)):
-                powerCsd = np.outer(C[:, fi], C[:, fi].conj())
-                powerEigenvals = linalg.eigh(powerCsd, eigvals_only=True)
-                cspec[k, fi] = powerEigenvals[-1] / nchans
-
-                plvCsd = np.outer(plvC[:, fi], plvC[:, fi].conj())
-                plvEigenvals = linalg.eigh(plvCsd, eigvals_only=True)
-                plv[k, fi] = plvEigenvals[-1] / nchans
-
-                itcCsd = np.outer(itcC[:, fi], itcC[:, fi].conj())
-                itcEigenvals = linalg.eigh(itcCsd, eigvals_only=True)
-                itc[k, fi] = itcEigenvals[-1] / nchans
-
-        # Avage over tapers and squeeze to pretty shapes
-        mtcpcaSpectrum = (cspec.mean(axis=0)).squeeze()
-        mtcpcaPhaseLockingValue = (plv.mean(axis=0)).squeeze()
-        mtcpcaInterTrialCoherence = (itc.mean(axis=0)).squeeze()
-
-        if (mtcpcaSpectrum.shape != mtcpcaPhaseLockingValue.shape or
-           mtcpcaSpectrum.shape != mtcpcaInterTrialCoherence.shape):
-            logger.error('internal error: shape mismatch between PLV/ITC ' +
-                         ' and magnitude result arrays')
-
-        out['mtcpcaSpectrum_' + thisType] = mtcpcaSpectrum
-        out['mtcpcaPLV_' + thisType] = mtcpcaPhaseLockingValue
-        out['mtcpcaITC_' + thisType] = mtcpcaInterTrialCoherence
-
-    if bootstrapMode:
-        out['f'] = f
-        return out
-    else:
-        S = {}
-        S['spectrum'] = out['mtcpcaSpectrum_normalPhase']
-        S['plv'] = out['mtcpcaPLV_normalPhase']
-        S['itc'] = out['mtcpcaITC_normalPhase']
-
-        N = {}
-        N['spectrum'] = out['mtcpcaSpectrum_noiseFloorViaPhaseFlip']
-        N['plv'] = out['mtcpcaPLV_noiseFloorViaPhaseFlip']
-        S['itc'] = ['mtcpcaITC_noiseFloorViaPhaseFlip']
-
-        return (S, N, f)
-
-
-def mtcspec_singletrials(x, params, verbose=None, bootstrapMode=False):
-    """Multitaper complex PCA and power spectral estimate
-
-    Done on a single-trial basis as opposed to the average
-
-    Warning: Untested
-
-    Parameters
-    ----------
-    x - NumPy Array
-        Input data (channel x trial x time)
-
-    params - Dictionary of parameter settings
-      params['Fs'] - sampling rate
-
-      params['tapers'] - [TW, Number of tapers]
-
-      params['fpass'] - Freqency range of interest, e.g. [5, 1000]
-
-      params['itc'] - 1 for ITC, 0 for PLV
-
-    verbose : bool, str, int, or None
-        The verbosity of messages to print. If a str, it can be either DEBUG,
-        INFO, WARNING, ERROR, or CRITICAL.
-
-    Returns
-    -------
-    In normal mode:
-        Tuple (cspec, f):
-
-          cspec - Multitapered (induced) spectrum estimate using cPCA
-
-          f - Frequency vector matching spectrum
-
-    In bootstrap mode:
-        Dictionary with the following keys:
-
-          mtcspec_induced - Multitapered PLV estimate using cPCA
-
-          f - Frequency vector matching plv
-    """
-
-    logger.info('Running Multitaper Complex PCA based power estimation!')
-    x = x.squeeze()
-    if(len(x.shape) == 3):
-        timedim = 2
-        trialdim = 1
-        ntrials = x.shape[trialdim]
-        nchans = x.shape[0]
-        logger.info('The data is of format %d channels x %d trials x time',
-                    nchans, ntrials)
-    else:
-        logger.error('Sorry! The data should be a 3 dimensional array!')
-
-    # Calculate the tapers
-    nfft, f, fInd = _get_freq_stuff(x, params, timedim)
-    ntaps = params['tapers'][1]
-    TW = params['tapers'][0]
-    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
-
-    # Make space for the PLV result
-
-    cspec = np.zeros((ntaps, ntrials, len(fInd)))
+    useData = x
 
     for k, tap in enumerate(w):
-        logger.info('Doing Taper #%d', k)
-        xw = sci.fft(tap * x, n=nfft, axis=timedim)
+        logger.info(thisType + 'Doing Taper #%d', k)
+
+        xw = np.fft.rfft((tap * useData), n=nfft, axis=timedim)
+
+        # no point keeping everything if fpass was already set
         xw = xw[:, :, fInd]
-        # C = (xw.mean(axis=trialdim)).squeeze()
-        for tr in np.arange(0, xw.shape[trialdim]):
-            for fi in range(xw.shape[timedim]):
+
+        C = xw.mean(axis=trialdim).squeeze()
+
+        itcC = (xw.mean(axis=trialdim) /
+                (abs(xw).mean(axis=trialdim))).squeeze()
+
+        plvC = (xw / abs(xw)).mean(axis=trialdim).squeeze()
+        
+
+        for fi in np.arange(0, len(f)):
+            powerCsd = np.outer(C[:, fi], C[:, fi].conj())
+            powerEigenvals = linalg.eigh(powerCsd, eigvals_only=True)
+            cspec[k, fi] = powerEigenvals[-1] / nchans
+
+            plvCsd = np.outer(plvC[:, fi], plvC[:, fi].conj())
+            plvEigenvals = linalg.eigh(plvCsd, eigvals_only=True)
+            plv[k, fi] = plvEigenvals[-1] / nchans
+
+            itcCsd = np.outer(itcC[:, fi], itcC[:, fi].conj())
+            itcEigenvals = linalg.eigh(itcCsd, eigvals_only=True)
+            itc[k, fi] = itcEigenvals[-1] / nchans
+        
+        for tr in np.arange(0, nTrials):
+            for fi in np.arange(0, len(f)):
                 Csd = np.outer(xw[:, tr, fi], xw[:, tr, fi].conj())
                 vals = linalg.eigh(Csd, eigvals_only=True)
-                cspec[k, tr, fi] = vals[-1] / nchans
+                cspecST[k, tr, fi] = vals[-1] / nchans
 
+    # Average over tapers and squeeze to pretty shapes
+    mtcpcaSpectrum = (cspec.mean(axis=0)).squeeze()
+    mtcpcaPhaseLockingValue = (plv.mean(axis=0)).squeeze()
+    mtcpcaInterTrialCoherence = (itc.mean(axis=0)).squeeze()
     # Average over tapers, then trials, and squeeze to pretty shapes
-    cspec = (cspec.mean(axis=0, keepdims=True).mean(axis=1)).squeeze()
-    if bootstrapMode:
-        out = {}
-        out['mtcspec_singletrials'] = cspec
-        out['f'] = f
+    cspecST = cspecST.mean(axis=0, keepdims=True).mean(axis=trialdim)
+    cspecST = cspecST.squeeze()
 
+    if (mtcpcaSpectrum.shape != mtcpcaPhaseLockingValue.shape or
+       mtcpcaSpectrum.shape != mtcpcaInterTrialCoherence.shape):
+        logger.error('internal error: shape mismatch between PLV/ITC ' +
+                     ' and magnitude result arrays')
+
+    out['spectrum'] = mtcpcaSpectrum
+    out['spectrum_st'] = cspecST 
+    out['plv'] = mtcpcaPhaseLockingValue
+    out['itc'] = mtcpcaInterTrialCoherence
+
+    if bootstrapMode:
+        out['f'] = f
         return out
     else:
-        return (cspec, f)
+        return (out, f)
 
 
 @verbose_decorator
