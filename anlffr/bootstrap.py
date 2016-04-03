@@ -147,13 +147,18 @@ def bootfunc(inputFunction, x, params, verbose=True):
             # only need to retrieve frequency vector once
             # otherwise remove it from key values to store
             if 'f' in usefulKeys:
-                frequencyVector = retrievedData[0]['f']
+                if frequencyVector is None: 
+                    frequencyVector = retrievedData[0]['f']
+                else:
+                    if not all(frequencyVector == retrievedData[0]['f']):
+                        logger.error('frequency vector mismatch across draws.')
+
                 usefulKeys.remove('f')
 
             # now run through the other keys and store the results
             for k in usefulKeys:
                 # set up the dictionary fields with the first retrieved piece
-                if 1 == numRetrieved:
+                if 0 == numRetrieved:
                     results[k] = dict(runningSum=0, runningSS=0, indivDraw=[])
 
                 if params['returnIndividualBootstrapResults']:
