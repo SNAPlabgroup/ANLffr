@@ -333,7 +333,7 @@ def _equate_data(inputData, params):
     minimumAcrossPools = min(poolSizes)
 
     if minimumAcrossPools % 2 == 1:
-        minimumAcrossPols -= 1
+        minimumAcrossPools -= 1
 
     # make sure the user knows this is what is going on
     warnStr1 = ('Selecting {} per pool '.format(minimumAcrossPools) +
