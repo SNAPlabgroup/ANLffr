@@ -137,10 +137,10 @@ def bootfunc(inputFunction, x, params, verbose=True):
     trialsUsed = []
     frequencyVector = None
 
+    status = 'Retrieved {:d}/{:d} '
     while numRetrieved < params['nDraws']:
         try:
             retrievedData = theQueue.get(True)
-            numRetrieved = numRetrieved + 1
 
             usefulKeys = retrievedData[0].keys()
 
@@ -169,6 +169,9 @@ def bootfunc(inputFunction, x, params, verbose=True):
                 results[k]['runningSS'] += retrievedData[0][k]**2.0
 
             trialsUsed.append(retrievedData[1])
+            
+            numRetrieved = numRetrieved + 1
+            logger.info(status.format(numRetrieved, params['nDraws']))
 
         # the following should be OK, as per:
         # http://stackoverflow.com/questions/
