@@ -1284,7 +1284,7 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     plv = np.zeros((ntaps, len(f)))
     itc = np.zeros((ntaps, len(f)))
     cspec = np.zeros((ntaps, len(f)))
-    cspecST = np.zeros((ntaps, nTrials, len(f)))
+    cspecST = np.zeros((ntaps, ntrials, len(f)))
 
     useData = x
 
@@ -1317,7 +1317,7 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
             itcEigenvals = linalg.eigh(itcCsd, eigvals_only=True)
             itc[k, fi] = itcEigenvals[-1] / nchans
         
-        for tr in np.arange(0, nTrials):
+        for tr in np.arange(0, ntrials):
             for fi in np.arange(0, len(f)):
                 Csd = np.outer(xw[:, tr, fi], xw[:, tr, fi].conj())
                 vals = linalg.eigh(Csd, eigvals_only=True)
