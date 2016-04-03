@@ -1415,7 +1415,6 @@ def generate_parameters(verbose=True, **kwArgs):
     params['itc'] = False
     params['threads'] = 4
     params['nDraws'] = 100
-    params['nPerDraw'] = 200
     params['returnIndividualBootstrapResults'] = False
     params['debugMode'] = False
 
@@ -1447,9 +1446,6 @@ def generate_parameters(verbose=True, **kwArgs):
         elif kw.lower() == 'ndraws':
             params['nDraws'] = int(kwArgs[kw])
 
-        elif kw.lower() == 'nperdraw':
-            params['nPerDraw'] = int(kwArgs[kw])
-
         elif kw.lower() == 'debugmode':
             params['debugMode'] = bool(kwArgs[kw])
 
@@ -1475,7 +1471,6 @@ def generate_parameters(verbose=True, **kwArgs):
                                           params['fpass'][1]))
     logger.info('itc = {}'.format(params['itc']))
     logger.info('NPairs = {}'.format(params['Npairs']))
-    logger.info('nPerDraw = {}'.format(params['nPerDraw']))
     logger.info('nDraws = {}'.format(params['nDraws']))
     logger.info('threads = {}'.format(params['threads']))
     logger.info('debugMode = {}'.format(params['debugMode']))
