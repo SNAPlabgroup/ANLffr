@@ -1260,6 +1260,11 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
 
     out = {}
 
+    if ('singleTrial' in params) and params['singleTrial']:
+        singleTrial = True
+    else:
+        singleTrial = False
+
     logger.info('Running Multitaper Complex PCA based ' +
                 'plv and power estimation.')
     x = x.squeeze()
@@ -1315,30 +1320,23 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
             itcCsd = np.outer(itcC[:, fi], itcC[:, fi].conj())
             itcEigenvals = linalg.eigh(itcCsd, eigvals_only=True)
             itc[k, fi] = itcEigenvals[-1] / nchans
-        
-        for tr in np.arange(0, ntrials):
-            for fi in np.arange(0, len(f)):
-                Csd = np.outer(xw[:, tr, fi], xw[:, tr, fi].conj())
-                vals = linalg.eigh(Csd, eigvals_only=True)
-                cspecST[k, tr, fi] = vals[-1] / nchans
+
+        if singleTrial: 
+            for tr in np.arange(0, ntrials):
+                for fi in np.arange(0, len(f)):
+                    Csd = np.outer(xw[:, tr, fi], xw[:, tr, fi].conj())
+                    vals = linalg.eigh(Csd, eigvals_only=True)
+                    cspecST[k, tr, fi] = vals[-1] / nchans
 
     # Average over tapers and squeeze to pretty shapes
-    mtcpcaSpectrum = (cspec.mean(axis=0)).squeeze()
-    mtcpcaPhaseLockingValue = (plv.mean(axis=0)).squeeze()
-    mtcpcaInterTrialCoherence = (itc.mean(axis=0)).squeeze()
-    # Average over tapers, then trials, and squeeze to pretty shapes
-    cspecST = cspecST.mean(axis=0, keepdims=True).mean(axis=trialdim)
-    cspecST = cspecST.squeeze()
-
-    if (mtcpcaSpectrum.shape != mtcpcaPhaseLockingValue.shape or
-       mtcpcaSpectrum.shape != mtcpcaInterTrialCoherence.shape):
-        logger.error('internal error: shape mismatch between PLV/ITC ' +
-                     ' and magnitude result arrays')
-
-    out['spectrum'] = mtcpcaSpectrum
-    out['spectrum_st'] = cspecST 
-    out['plv'] = mtcpcaPhaseLockingValue
-    out['itc'] = mtcpcaInterTrialCoherence
+    out['spectrum'] = (cspec.mean(axis=0)).squeeze()
+    out['plv'] = (plv.mean(axis=0)).squeeze()
+    out['itc'] = (itc.mean(axis=0)).squeeze()
+    
+    if singleTrial:
+        # Average over tapers, then trials, and squeeze to pretty shapes
+        cspecST = cspecST.mean(axis=0, keepdims=True).mean(axis=trialdim)
+        out['spectrum_st'] = cspecST.squeeze()
 
     if bootstrapMode:
         out['f'] = f
