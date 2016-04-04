@@ -1390,9 +1390,9 @@ def generate_parameters(verbose=True, **kwArgs):
     params['itc'] = False
     params['threads'] = 4
     params['nDraws'] = 100
-    params['nPerDraw'] = 200
     params['returnIndividualBootstrapResults'] = False
     params['debugMode'] = False
+    params['singleTrial'] = False
 
     Change any key value by using it as an keyword argument; e.g.,
 
@@ -1415,6 +1415,7 @@ def generate_parameters(verbose=True, **kwArgs):
     params['nDraws'] = 100
     params['returnIndividualBootstrapResults'] = False
     params['debugMode'] = False
+    params['singleTrial'] = False
 
     userKeys = kwArgs.keys()
 
@@ -1462,18 +1463,19 @@ def generate_parameters(verbose=True, **kwArgs):
         logger.info('nfft = {}'.format(params['nfft']))
     else:
         logger.info('nfft = 2**ceil(log2(data.shape[timeDimension]))')
-
     logger.info('Number of tapers = {} '.format(params['tapers'][1]))
     logger.info('Taper TW = {} '.format(params['tapers'][0]))
     logger.info('fpass = [{}, {}]'.format(params['fpass'][0],
                                           params['fpass'][1]))
     logger.info('itc = {}'.format(params['itc']))
     logger.info('NPairs = {}'.format(params['Npairs']))
-    logger.info('nDraws = {}'.format(params['nDraws']))
-    logger.info('threads = {}'.format(params['threads']))
     logger.info('debugMode = {}'.format(params['debugMode']))
+    logger.info('\nBootstrap specific:\n')
+    logger.info('threads = {}'.format(params['threads']))
+    logger.info('nDraws = {}'.format(params['nDraws']))
     logger.info('returnIndividualBootstrapResults = {}'.format(
         params['returnIndividualBootstrapResults']))
+    logger.info('singleTrial = {}'.format(params['singleTrial']))
 
     return params
 
@@ -1531,5 +1533,12 @@ def _validate_parameters(params, verbose=True):
         params['fpass'] = [0.0, params['Fs'] / 2.0]
         logger.warn('params[''fpass''] defaulting to ' +
                     '[0, (params[''Fs'']/2.0)]')
+
+    if 'singleTrial' in params:
+        if (ifinstance(params['singleTrial'], str) and 
+            params['singleTrial'].lower() == 'false'):
+            params['singleTrial'] = False
+        else:
+            params['singleTrial'] = bool(params['singleTrial'])
 
     return params
