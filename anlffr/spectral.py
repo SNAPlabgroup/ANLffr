@@ -1535,7 +1535,7 @@ def _validate_parameters(params, verbose=True):
                     '[0, (params[''Fs'']/2.0)]')
 
     if 'singleTrial' in params:
-        if (ifinstance(params['singleTrial'], str) and 
+        if (isinstance(params['singleTrial'], str) and 
             params['singleTrial'].lower() == 'false'):
             params['singleTrial'] = False
         else:
