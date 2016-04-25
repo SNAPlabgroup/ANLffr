@@ -1205,13 +1205,7 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     phase of alternate trials and running the computations)
 
     Gets power spectra and plv on the same set of data using multitaper and
-    complex PCA. Returns a noise floor esimate of each by running the same
-    computations on the original data, as well as the original data with the
-    phase of half of the trials flipped. For a large number of trials, the
-    spectra of the data and the half-trials-phase-flipped data should be
-    similar, while the PLV values for the half-trials-flipped data should be
-    hovering near the PLV value of off-frequency components in the original
-    data.
+    complex PCA. 
 
     Parameters
     ----------
@@ -1260,11 +1254,6 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
 
     out = {}
 
-    if ('singleTrial' in params) and params['singleTrial']:
-        singleTrial = True
-    else:
-        singleTrial = False
-
     logger.info('Running Multitaper Complex PCA based ' +
                 'plv and power estimation.')
     x = x.squeeze()
@@ -1289,7 +1278,6 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     plv = np.zeros((ntaps, len(f)))
     itc = np.zeros((ntaps, len(f)))
     cspec = np.zeros((ntaps, len(f)))
-    cspecST = np.zeros((ntaps, ntrials, len(f)))
 
     useData = x
 
@@ -1321,22 +1309,10 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
             itcEigenvals = linalg.eigh(itcCsd, eigvals_only=True)
             itc[k, fi] = itcEigenvals[-1] / nchans
 
-        if singleTrial: 
-            for tr in np.arange(0, ntrials):
-                for fi in np.arange(0, len(f)):
-                    Csd = np.outer(xw[:, tr, fi], xw[:, tr, fi].conj())
-                    vals = linalg.eigh(Csd, eigvals_only=True)
-                    cspecST[k, tr, fi] = vals[-1] / nchans
-
     # Average over tapers and squeeze to pretty shapes
     out['spectrum'] = (cspec.mean(axis=0)).squeeze()
     out['plv'] = (plv.mean(axis=0)).squeeze()
     out['itc'] = (itc.mean(axis=0)).squeeze()
-    
-    if singleTrial:
-        # Average over tapers, then trials, and squeeze to pretty shapes
-        cspecST = cspecST.mean(axis=0, keepdims=True).mean(axis=trialdim)
-        out['spectrum_st'] = cspecST.squeeze()
 
     if bootstrapMode:
         out['f'] = f

@@ -206,6 +206,39 @@ def bootfunc(inputFunction, x, params, verbose=True):
     return output
 
 
+def permutation_test(inputFunction, x1, x2, params, verbose=True):
+    # split the loads roughly equally:
+    drawSplit = _compute_thread_split(params)
+
+    set1 = inputFunction(x1, params, verbose=False,
+                         bootstrapMode=True)
+
+    set2 = inputFunction(x2, params, verbose=False,
+                         bootstrapMode=True)
+
+
+    # set up the processes
+    processList = []
+    for proc in range(len(drawSplit)):
+        if 'debugMode' in params and params['debugMode']:
+            logger.warn('Warning: setting fixed random seeds!')
+            randomState = np.random.RandomState(proc)
+        else:
+            randomState = np.random.RandomState(None)
+        
+
+        if platform.system() != 'Windows':
+            processList.append(
+                multiprocessing.Process(target=_multiprocess_wrapper,
+                                        args=(inputFunction,
+                                              sanitizedData,
+                                              params,
+                                              drawSplit[proc],
+                                              theQueue,
+                                              randomState)))
+
+
+
 @verbose_decorator
 def _multiprocess_wrapper(inputFunction, inputData, params, nDraws, 
                           resultsQueue, randState, verbose=True):
@@ -223,6 +256,28 @@ def _multiprocess_wrapper(inputFunction, inputData, params, nDraws,
                trialsUsed)
 
         resultsQueue.put(out)  # block by default...
+
+def _permutation_test_wrapper(inputFunction, x1, x2, params, nDraws, 
+                              resultsQueue, randState, verbose=True):
+    """
+    internal function. places results from spectral functions in queue.
+    """
+
+    for _ in range(nDraws):
+
+        x1_r, x2_r = _shuffle_labels(x1, x2)
+
+        out = (inputFunction(theseData, theseParams, verbose=False,
+                             bootstrapMode=True),
+               trialsUsed)
+
+        resultsQueue.put(out)  # block by default...
+
+@verbose_decorator
+def _shuffle_labels(x1, x2, verbose=None):
+    x1x2 = np.concatenate([x1, x2], axis=1)
+    
+
 
 
 @verbose_decorator
