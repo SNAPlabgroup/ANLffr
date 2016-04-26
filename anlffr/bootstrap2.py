@@ -21,7 +21,7 @@ def bootfunc(inputFunction, x1, params, verbose=True):
             results.append(_run_bootfunc(inputFunction, x1, params))
     else:
         P = Parallel(nJobs)
-        d = P(delayed(run_bootfunc))
+        d = P(delayed(_run_bootfunc))
         results = (d(inputFunction, x1, params) for i in range(nDraws))
 
     concatenated = _dict_concatenate(results)
