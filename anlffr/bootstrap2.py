@@ -35,7 +35,7 @@ def bootfunc(inputFunction, x1, params, verbose=True):
     concatenated = _dict_concatenate(results)
 
     output = {}
-    usefulKeys = concatenated.keys()
+    usefulKeys = list(concatenated.keys())
     output['f'] = concatenated['f']
     usefulKeys.remove('f')
 
@@ -103,7 +103,7 @@ def _dict_diff(x1Res, x2Res, verbose=True):
     arrays.
     '''
     difference = {}
-    usefulKeys = x1Res.keys()
+    usefulKeys = list(x1Res.keys())
     usefulKeys.remove('f')
 
     for k in usefulKeys:
@@ -121,7 +121,7 @@ def _dict_concatenate(resList, verbose=True):
     running anlffr.spectrum functions using joblib parallel instance.
     '''
     concatenated = {}
-    usefulKeys = resList[0].keys()
+    usefulKeys = list(resList[0].keys())
     concatenated['f'] = resList[0]['f']
     usefulKeys.remove('f')
     
