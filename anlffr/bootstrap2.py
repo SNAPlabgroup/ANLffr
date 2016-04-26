@@ -1,17 +1,25 @@
 import numpy as np
 from anlffr import spectral
-from joblib import Parallel, delayed
-from .utils import logger
-from .utils import verbose
+from .utils import logger, verbose
 import time
 
 @verbose
 def bootfunc(inputFunction, x1, params, verbose=True):
+    '''
+    computes the bootstrapped mean and variance of x1 as processed by
+    inputFunction. inputFunction is expected to be one of the functions from
+    anlffr.spectral.
+    '''
     startTime = time.time()
+    params = _fix_params(params)
     try:
+        from joblib import Parallel, delayed
         nJobs = int(params['threads'])
+    except ImportError:
+        logger.warning('joblib not installed; cannot run in parallel.')
     except KeyError:
         nJobs = 1
+
     nDraws = int(params['nDraws'])
 
     x1, n = _equate_within_pool(x1)
@@ -21,7 +29,8 @@ def bootfunc(inputFunction, x1, params, verbose=True):
             results.append(_run_bootfunc(inputFunction, x1, params))
     else:
         P = Parallel(n_jobs=nJobs)
-        results = P(delayed(_run_bootfunc)(inputFunction, x1, params) for i in range(nDraws))
+        results = P(delayed(_run_bootfunc)(inputFunction, x1, params) 
+                    for i in range(nDraws))
 
     concatenated = _dict_concatenate(results)
 
@@ -50,11 +59,17 @@ def permutation_distributions(inputFunction, x1, x2, params, verbose=True):
     distribution of differences when the labels are shuffled at random.
     inputFunction is expected to be one of the functions from anlffr.spectral.
     '''
+    startTime = time.time()
+    params = _fix_params(params)
     try:
+        from joblib import Parallel, delayed
         nJobs = int(params['threads'])
+    except ImportError:
+        logger.warning('joblib not installed; cannot run in parallel.')
     except KeyError:
         nJobs = 1
-    nDraws = params['nDraws']
+
+    nDraws = int(params['nDraws'])
 
     if len(x1) != len(x2):
         raise ValueError('x1 and x2 must have same first dimension')
@@ -62,8 +77,8 @@ def permutation_distributions(inputFunction, x1, x2, params, verbose=True):
     x1, n1 = _equate_within_pool(x1)
     x2, n2 = _equate_within_pool(x2)
     
-    x1Res = inputFunction(x1, params, bootstrapMode=True)
-    x2Res = inputFunction(x2, params, bootstrapMode=True)
+    x1Res = inputFunction(x1, params)
+    x2Res = inputFunction(x2, params)
     difference = _dict_diff(x1Res, x2Res)
 
     if nJobs == 1:
@@ -73,7 +88,8 @@ def permutation_distributions(inputFunction, x1, x2, params, verbose=True):
 
     else:
         P = Parallel(n_jobs=nJobs)
-        results = P(delayed(_get_null_difference)(inputFunction, x1, x2, params) for i in range(nDraws))
+        results = P(delayed(_get_null_difference)(inputFunction, x1, x2, params)
+                    for i in range(nDraws))
 
     nullDifferenceDistribution = _dict_concatenate(results)
 
@@ -167,7 +183,8 @@ def _label_shuffler(x1, x2, verbose=True):
 def _equate_within_pool(inputData, verbose=True):
     '''
     Sets the number of trials per list element to be equal For example: useful
-    when computing EFRs, and need an equal number of +/- polarity trials. 
+    when computing EFRs, and need an equal number of +/- polarity trials in
+    computation
     '''
     r = np.random.RandomState(None)
     errorStr = 'list/tuple of 3D arrays'
@@ -215,3 +232,12 @@ def _sample_with_replacement(inputData, verbose=True):
         resampled[x] = inputData[x][:, tr, :]
 
     return resampled
+
+@verbose
+def _check_params(params):
+    fixedParams = dict(params)
+    if ('bootstrapMode' not in params.keys() or
+        fixedParams['bootstrapMode'] == False):
+        fixedParams['bootstrapMode'] = True
+
+    return fixedParams

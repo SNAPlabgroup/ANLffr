@@ -14,6 +14,7 @@ setup(
     author='Hari Bharadwaj',
     author_email='hari@nmr.mgh.harvard.edu',
     packages=['anlffr', 'anlffr.helper', 'anlffr.externals'],
+    install_requires=['joblib'],
     package_data={'anlffr.helper': ['sysfiles/*']},
     url='http://github.com/haribharadwaj/ANLffr/',
     license='BSD (3 Clause)',

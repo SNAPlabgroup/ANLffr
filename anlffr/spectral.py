@@ -69,13 +69,18 @@ import numpy as np
 from math import ceil
 import scipy as sci
 from scipy import linalg
-from .dpss import dpss_windows
-# rename verbose to make pep8/pylint checkers stop complainig
+try:
+    from nitime.algorithms import dpss_windows
+    logger.info('using nitime for dpss computations')
+except ImportError:
+    from .dpss import dpss_windows
+    logger.info('using anlffr for dpss computations')
 from .utils import logger, deprecated, verbose as verbose_decorator
+from multiprocessing import cpu_count
 
 
 @verbose_decorator
-def mtplv(x, params, verbose=None, bootstrapMode=False):
+def mtplv(x, params, verbose=None):
     """Multitaper Phase-Locking Value
 
     Parameters
@@ -109,6 +114,10 @@ def mtplv(x, params, verbose=None, bootstrapMode=False):
          f - Frequency vector matching plv
 
     """
+    try:
+        bootstrapMode = params['bootstrapMode']
+    except KeyError:
+        bootstrapMode = False
 
     logger.info('Running Multitaper PLV Estimation')
     x = x.squeeze()
@@ -164,7 +173,7 @@ def mtplv(x, params, verbose=None, bootstrapMode=False):
 
 
 @verbose_decorator
-def mtspec(x, params, verbose=None, bootstrapMode=False):
+def mtspec(x, params, verbose=None):
     """Multitaper Spectrum and SNR estimate
 
     Parameters
@@ -207,6 +216,10 @@ def mtspec(x, params, verbose=None, bootstrapMode=False):
          f - Frequency vector matching plv
 
     """
+    try:
+        bootstrapMode = params['bootstrapMode']
+    except KeyError:
+        bootstrapMode = False
 
     logger.info('Running Multitaper Spectrum and Noise-floor Estimation')
     x = x.squeeze()
@@ -281,7 +294,7 @@ def mtspec(x, params, verbose=None, bootstrapMode=False):
 
 
 @verbose_decorator
-def mtphase(x, params, verbose=None, bootstrapMode=False):
+def mtphase(x, params, verbose=None):
     """Multitaper phase estimation
 
     Parameters
@@ -316,6 +329,10 @@ def mtphase(x, params, verbose=None, bootstrapMode=False):
         f - Frequency vector matching plv
 
     """
+    try:
+        bootstrapMode = params['bootstrapMode']
+    except KeyError:
+        bootstrapMode = False
 
     logger.info('Running Multitaper Spectrum and Noise-floor Estimation')
     x = x.squeeze()
@@ -363,7 +380,7 @@ def mtphase(x, params, verbose=None, bootstrapMode=False):
 
 
 @verbose_decorator
-def mtcpca(x, params, verbose=None, bootstrapMode=False):
+def mtcpca(x, params, verbose=None):
     """Multitaper complex PCA and PLV
 
     Parameters
@@ -399,6 +416,10 @@ def mtcpca(x, params, verbose=None, bootstrapMode=False):
           f - Frequency vector matching plv
 
     """
+    try:
+        bootstrapMode = params['bootstrapMode']
+    except KeyError:
+        bootstrapMode = False
 
     logger.info('Running Multitaper Complex PCA based PLV Estimation')
     x = x.squeeze()
@@ -452,7 +473,7 @@ mtcplv = mtcpca
 
 
 @verbose_decorator
-def mtcspec(x, params, verbose=None, bootstrapMode=False):
+def mtcspec(x, params, verbose=None):
     """Multitaper complex PCA and power spectral estimate
 
     Parameters
@@ -489,6 +510,10 @@ def mtcspec(x, params, verbose=None, bootstrapMode=False):
 
           f - Frequency vector matching plv
     """
+    try:
+        bootstrapMode = params['bootstrapMode']
+    except KeyError:
+        bootstrapMode = False
 
     logger.info('Running Multitaper Complex PCA based power estimation!')
     x = x.squeeze()
@@ -536,7 +561,7 @@ def mtcspec(x, params, verbose=None, bootstrapMode=False):
 
 
 @verbose_decorator
-def mtcpca_timeDomain(x, params, verbose=None, bootstrapMode=False):
+def mtcpca_timeDomain(x, params, verbose=None):
     """Multitaper complex PCA and regular time-domain PCA and return time
     domain waveforms.
 
@@ -588,6 +613,10 @@ def mtcpca_timeDomain(x, params, verbose=None, bootstrapMode=False):
           'y_pc' - Regular time-domain PCA
 
     """
+    try:
+        bootstrapMode = params['bootstrapMode']
+    except KeyError:
+        bootstrapMode = False
 
     logger.info('Running Multitaper Complex PCA to extract time waveform!')
     x = x.squeeze()
@@ -639,257 +668,6 @@ def mtcpca_timeDomain(x, params, verbose=None, bootstrapMode=False):
         return (y_cpc, y_pc)
 
 
-@deprecated('Please use the anlffr.bootstrap module for all bootstrap '
-            'functions. bootfunc() will be removed in future releases')
-@verbose_decorator
-def bootfunc(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
-    """Run spectral functions with bootstrapping over trials
-
-    Parameters
-    ----------
-    x - Numpy Array
-        Input data (channel x trials x time) or (trials x time)
-    nPerDraw - int
-        Number of trials for each draw
-    nDraws - int
-        Number of draws
-    params - dict
-        Dictionary of parameters to use when calling chosen function
-    func - str
-        'cpca' or 'plv' or 'itc' or 'spec' or 'ppc' or 'pspec'
-    verbose : bool, str, int, or None
-        The verbosity of messages to print. If a str, it can be either DEBUG,
-        INFO, WARNING, ERROR, or CRITICAL.
-
-    Returns
-    -------
-    (mu_func, v_func, f): Tuple
-        For everything except when func == 'spec'
-    (S, N, vS, vN, f): Tuple
-        When func == 'spec'
-    A 'v' prefix denotes variance estimate and a prefix 'mu' denotes mean.
-
-    See help for mtcpca(), mtplv() and mtspec() for more details.
-
-    Notes
-    -----
-
-    This is not a particularly parallelized piece of code and hence slow.
-    It is provided just so the functionality is there.
-
-    """
-
-    logger.info('Running a bootstrapped version of function: %s', func)
-    x = x.squeeze()
-    if(len(x.shape) == 3):
-        trialdim = 1
-        ntrials = x.shape[trialdim]
-        nchans = x.shape[0]
-        logger.info('The data is of format %d channels x %d trials x time',
-                    nchans, ntrials)
-    elif(len(x.shape) == 2):
-        trialdim = 0
-        ntrials = x.shape[trialdim]
-        logger.info('The data is of format %d trials x time (single channel)',
-                    ntrials)
-    else:
-        logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
-
-    if(func == 'spec'):
-        S = 0
-        N = 0
-        vS = 0
-        vN = 0
-    else:
-        mu_func = 0
-        v_func = 0
-
-    for drawnum in np.arange(0, nDraws):
-        inds = np.random.randint(0, ntrials, nPerDraw)
-
-        logger.debug('Doing Draw #%d / %d', drawnum + 1, nDraws)
-
-        if(trialdim == 1):
-            xdraw = x[:, inds, :]
-        elif(trialdim == 0):
-            xdraw = x[inds, :]
-        else:
-            logger.error('Data not in the right formmat!')
-
-        if(func == 'spec'):
-            (tempS, tempN, f) = mtspec(xdraw, params, verbose=False)
-            S = S + tempS
-            N = N + tempN
-            vS = vS + tempS ** 2
-            vN = vN + tempN ** 2
-        elif(func == 'cpca'):
-            (temp_func, f) = mtcpca(xdraw, params, verbose=False)
-            mu_func = mu_func + temp_func
-            v_func = v_func + temp_func ** 2
-        elif(func == 'itc'):
-            params['itc'] = 1
-            (temp_func, f) = mtplv(xdraw, params, verbose=False)
-            mu_func = mu_func + temp_func
-            v_func = v_func + temp_func ** 2
-        elif(func == 'plv'):
-            params['plv'] = 0
-            (temp_func, f) = mtplv(xdraw, params, verbose=False)
-            mu_func = mu_func + temp_func
-            v_func = v_func + temp_func ** 2
-        elif(func == 'ppc'):
-            (temp_func, f) = mtppc(xdraw, params, verbose=False)
-            mu_func = mu_func + temp_func
-            v_func = v_func + temp_func ** 2
-        elif(func == 'pspec'):
-            (temp_func, f) = mtpspec(xdraw, params, verbose=False)
-            mu_func = mu_func + temp_func
-            v_func = v_func + temp_func ** 2
-        else:
-            logger.error('Unknown func argument!')
-            return
-
-    if(func == 'spec'):
-        vS = (vS - (S ** 2) / nDraws) / (nDraws - 1)
-        vN = (vN - (N ** 2) / nDraws) / (nDraws - 1)
-        S = S / nDraws
-        N = N / nDraws
-        return (S, N, vS, vN, f)
-    else:
-        v_func = (v_func - (mu_func ** 2) / nDraws) / (nDraws - 1)
-        mu_func = mu_func / nDraws
-        return (mu_func, v_func, f)
-
-
-@deprecated('Please use the anlffr.bootstrap module for all bootstrap '
-            'functions. indivboot() will be removed in future releases')
-@verbose_decorator
-def indivboot(x, nPerDraw, nDraws, params, func='cpca', verbose=None):
-    """Run spectral functions with bootstrapping over trials
-    This also returns individual draw results, unlike bootfunc()
-
-    DEPRECATION WARNING: recommend use of anlffr.bootstrap module
-
-    Parameters
-    ----------
-    x - Numpy array
-        Input data (channel x trials x time) or (trials x time)
-    nPerDraw - int
-        Number of trials for each draw
-    nDraws - int
-        Number of draws
-    params - dict
-        Dictionary of parameters to use when calling chosen function
-    func - str
-        'cpca' or 'plv' or 'itc' or 'spec' or 'ppc', i.e. which to call?
-    verbose : bool, str, int, or None
-        The verbosity of messages to print. If a str, it can be either DEBUG,
-        INFO, WARNING, ERROR, or CRITICAL.
-
-    Returns
-    -------
-    (plv, f) - Tuple
-        For everything except when func == 'spec' (including 'ppc')
-    (S, N, f)  - Tuple
-        When func == 'spec'
-    plv, S and N arrays will have an extra dimension spanning the draws.
-
-    See help for mtcpca(), mtplv() and mtspec() for more details.
-
-    Notes
-    -----
-
-    This is not a particularly parallelized piece of code and hence slow.
-    It is provided just so the functionality is there. Mostly untested.
-
-    """
-
-    logger.info('Running a bootstrapped version of function: %s', func)
-    x = x.squeeze()
-    if(len(x.shape) == 3):
-        trialdim = 1
-        ntrials = x.shape[trialdim]
-        nchans = x.shape[0]
-        logger.info('The data is of format %d channels x %d trials x time',
-                    nchans, ntrials)
-    elif(len(x.shape) == 2):
-        trialdim = 0
-        ntrials = x.shape[trialdim]
-        nchans = 1
-        logger.info('The data is of format %d trials x time (single channel)',
-                    ntrials)
-    else:
-        logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
-
-    # Running 1 draw to get the right sizes
-    if(func == 'spec'):
-        (S, N, f) = mtspec(x, params, verbose=False)
-        S = np.zeros(S.shape + (nDraws,))
-        N = np.zeros(N.shape + (nDraws,))
-
-    elif((func == 'plv') or (func == 'itc') or (func == 'ppc')):
-        (plv, f) = mtplv(x, params, verbose=False)
-        plv = np.zeros(plv.shape + (nDraws,))
-
-    elif(func == 'cpca'):
-        (plv, f) = mtcpca(x, params, verbose=False)
-        plv = np.zeros(plv.shape + (nDraws,))
-
-    for drawnum in np.arange(0, nDraws):
-        inds = np.random.randint(0, ntrials, nPerDraw)
-
-        logger.debug('Doing Draw #%d / %d', drawnum + 1, nDraws)
-
-        if(nchans > 1):
-            xdraw = x[:, inds, :]
-        elif(nchans == 1):
-            xdraw = x[inds, :]
-        else:
-            logger.error('Data not in the right formmat!')
-
-        if(func == 'spec'):
-            if(nchans > 1):
-                (S[:, :, drawnum], N[:, :, drawnum], f) = mtspec(xdraw,
-                                                                 params,
-                                                                 verbose=False)
-            else:
-                (S[:, drawnum], N[:, drawnum], f) = mtspec(xdraw,
-                                                           params,
-                                                           verbose=False)
-
-        elif(func == 'cpca'):
-            (plv[:, drawnum], f) = mtcpca(xdraw, params, verbose=False)
-
-        elif(func == 'itc'):
-            params['itc'] = 1
-            if(nchans > 1):
-                (plv[:, :, drawnum], f) = mtplv(xdraw, params, verbose=False)
-            else:
-                (plv[:, drawnum], f) = mtplv(x, params, verbose=False)
-
-        elif(func == 'plv'):
-            params['plv'] = 0
-            if(nchans > 1):
-                (plv[:, :, drawnum], f) = mtplv(xdraw, params, verbose=False)
-            else:
-                (plv[:, drawnum], f) = mtplv(x, params, verbose=False)
-
-        elif(func == 'ppc'):
-            if(nchans > 1):
-                (plv[:, :, drawnum], f) = mtppc(xdraw, params, verbose=False)
-            else:
-                (plv[:, drawnum], f) = mtppc(x, params, verbose=False)
-
-        else:
-            logger.error('Unknown func argument!')
-            return
-
-    if(func == 'spec'):
-
-        return (S, N, f)
-    else:
-        return (plv, f)
-
-
 @verbose_decorator
 def mtppc(x, params, verbose=None, bootstrapMode=False):
     """Multitaper Pairwise Phase Consistency
@@ -929,6 +707,10 @@ def mtppc(x, params, verbose=None, bootstrapMode=False):
           f - Frequency vector matching plv
 
     """
+    try:
+        bootstrapMode = params['bootstrapMode']
+    except KeyError:
+        bootstrapMode = False
 
     logger.info('Running Multitaper Pairwise Phase Consistency Estimate')
     x = x.squeeze()
@@ -1043,6 +825,10 @@ def mtspecraw(x, params, verbose=None, bootstrapMode=False):
           f - Frequency vector matching plv
 
     """
+    try:
+        bootstrapMode = params['bootstrapMode']
+    except KeyError:
+        bootstrapMode = False
 
     logger.info('Running Multitaper Raw Spectrum Estimation')
     x = x.squeeze()
@@ -1128,6 +914,11 @@ def mtpspec(x, params, verbose=None, bootstrapMode=False):
           f - Frequency vector matching plv
 
     """
+    try:
+        bootstrapMode = params['bootstrapMode']
+    except KeyError:
+        bootstrapMode = False
+
     logger.info('Running Multitaper Pairwise Power Estimate')
     x = x.squeeze()
     if(len(x.shape) == 3):
@@ -1251,6 +1042,10 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
           f - frequency vector
 
     """
+    try:
+        bootstrapMode = params['bootstrapMode']
+    except KeyError:
+        bootstrapMode = False
 
     out = {}
 
@@ -1387,16 +1182,18 @@ def generate_parameters(verbose=True, **kwArgs):
     params['tapers'] = [2, 3]
     params['Npairs'] = 0
     params['itc'] = False
-    params['threads'] = 4
-    params['nDraws'] = 100
+    params['threads'] = cpu_count()
+    params['nDraws'] = 1000
     params['returnIndividualBootstrapResults'] = False
     params['debugMode'] = False
-    params['singleTrial'] = False
+    params['bootstrapMode'] = False
 
     userKeys = kwArgs.keys()
 
     for kw in userKeys:
-        if kw.lower() == 'fs' or kw.lower() == 'samplerate':
+        if (kw.lower() == 'fs' or
+            kw.lower() == 'samplerate' or
+            kw.lower == 'sfreq'):
             params['Fs'] = int(kwArgs[kw])
 
         elif kw.lower() == 'nfft':
@@ -1427,6 +1224,9 @@ def generate_parameters(verbose=True, **kwArgs):
         elif kw.lower() == 'returnindividualbootstrapresults':
             params['returnIndividualBootstrapResults'] = bool(
                 kwArgs[kw])
+
+        elif kw.lower() == 'bootstrapmode':
+            params['bootstrapMode'] = bool(kwArgs[kw])
         else:
             params[kw] = kwArgs[kw]
             logger.info((kw + ' = {}').format(kwArgs[kw]))
@@ -1447,11 +1247,11 @@ def generate_parameters(verbose=True, **kwArgs):
     logger.info('NPairs = {}'.format(params['Npairs']))
     logger.info('debugMode = {}'.format(params['debugMode']))
     logger.info('\nBootstrap specific:\n')
+    logger.info('bootstrapMode: {}'.format(params['bootstrapMode']))
     logger.info('threads = {}'.format(params['threads']))
     logger.info('nDraws = {}'.format(params['nDraws']))
     logger.info('returnIndividualBootstrapResults = {}'.format(
         params['returnIndividualBootstrapResults']))
-    logger.info('singleTrial = {}'.format(params['singleTrial']))
 
     return params
 
@@ -1509,12 +1309,5 @@ def _validate_parameters(params, verbose=True):
         params['fpass'] = [0.0, params['Fs'] / 2.0]
         logger.info('params[''fpass''] defaulting to ' +
                     '[0, (params[''Fs'']/2.0)]')
-
-    if 'singleTrial' in params:
-        if (isinstance(params['singleTrial'], str) and 
-            params['singleTrial'].lower() == 'false'):
-            params['singleTrial'] = False
-        else:
-            params['singleTrial'] = bool(params['singleTrial'])
 
     return params
