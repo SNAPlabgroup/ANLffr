@@ -69,14 +69,14 @@ import numpy as np
 from math import ceil
 import scipy as sci
 from scipy import linalg
+from .utils import logger, deprecated, verbose as verbose_decorator
+from multiprocessing import cpu_count
 try:
     from nitime.algorithms import dpss_windows
     logger.info('using nitime for dpss computations')
 except ImportError:
     from .dpss import dpss_windows
     logger.info('using anlffr for dpss computations')
-from .utils import logger, deprecated, verbose as verbose_decorator
-from multiprocessing import cpu_count
 
 
 @verbose_decorator
