@@ -122,7 +122,7 @@ def _dict_concatenate(resList, verbose=True):
     '''
     concatenated = {}
     usefulKeys = resList[0].keys()
-    concatenated['f'] = reslist[0]['f']
+    concatenated['f'] = resList[0]['f']
     usefulKeys.remove('f')
     
     for k in usefulKeys:

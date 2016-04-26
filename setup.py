@@ -6,7 +6,7 @@ Created on Thu Oct 10 19:00:08 2013
 @author: hari
 """
 
-from numpy.distutils.core import setup
+from distutils.core import setup
 
 setup(
     name='ANLffr',
@@ -14,7 +14,7 @@ setup(
     author='Hari Bharadwaj',
     author_email='hari@nmr.mgh.harvard.edu',
     packages=['anlffr', 'anlffr.helper', 'anlffr.externals'],
-    install_requires=['joblib'],
+    requires=['joblib'],
     package_data={'anlffr.helper': ['sysfiles/*']},
     url='http://github.com/haribharadwaj/ANLffr/',
     license='BSD (3 Clause)',
