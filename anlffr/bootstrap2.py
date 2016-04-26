@@ -234,7 +234,7 @@ def _sample_with_replacement(inputData, verbose=True):
     return resampled
 
 @verbose
-def _check_params(params):
+def _fix_params(params):
     fixedParams = dict(params)
     if ('bootstrapMode' not in params.keys() or
         fixedParams['bootstrapMode'] == False):
