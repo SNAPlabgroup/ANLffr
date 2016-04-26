@@ -18,7 +18,7 @@ def bootfunc(inputFunction, x1, params, verbose=True):
     if nJobs == 1:
         results = []
         for i in range(nDraws):
-            results.append(run_bootfunc(inputFunction, x1, params))
+            results.append(_run_bootfunc(inputFunction, x1, params))
     else:
         P = Parallel(nJobs)
         d = P(delayed(run_bootfunc))

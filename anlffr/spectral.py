@@ -1333,7 +1333,7 @@ def _get_freq_stuff(x, params, timeDim=2, verbose=None):
     if 'nfft' in params:
         if params['nfft'] < x.shape[timeDim]:
             badNfft = True
-            logger.warn(
+            logger.warning(
                 'nfft should be >= than number of time points. Reverting' +
                 'to default setting of nfft = 2**ceil(log2(nTimePts))\n')
 
@@ -1469,7 +1469,7 @@ def _validate_parameters(params, verbose=True):
         logger.error('params[''Fs''] must be specified')
 
     if 'nfft' not in params:
-        logger.warn('params[''nfft''] defaulting to ' +
+        logger.info('params[''nfft''] defaulting to ' +
                     '2**ceil(log2(data.shape[timeDimension]))')
 
     # check/fix taper input
@@ -1507,7 +1507,7 @@ def _validate_parameters(params, verbose=True):
                          'params[''fpass''][1]')
     else:
         params['fpass'] = [0.0, params['Fs'] / 2.0]
-        logger.warn('params[''fpass''] defaulting to ' +
+        logger.info('params[''fpass''] defaulting to ' +
                     '[0, (params[''Fs'']/2.0)]')
 
     if 'singleTrial' in params:
