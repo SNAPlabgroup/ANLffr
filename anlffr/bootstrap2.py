@@ -21,7 +21,7 @@ def bootfunc(inputFunction, x1, params, verbose=True):
             results.append(_run_bootfunc(inputFunction, x1, params))
     else:
         P = Parallel(n_jobs=nJobs)
-        P(delayed(_run_bootfunc)(inputFunction, x1, params) for i in range(nDraws))
+        results = P(delayed(_run_bootfunc)(inputFunction, x1, params) for i in range(nDraws))
 
     concatenated = _dict_concatenate(results)
 
@@ -73,7 +73,7 @@ def permutation_distributions(inputFunction, x1, x2, params, verbose=True):
 
     else:
         P = Parallel(n_jobs=nJobs)
-        P(delayed(_get_null_difference)(inputFunction, x1, x2, params) for i in range(nDraws))
+        results = P(delayed(_get_null_difference)(inputFunction, x1, x2, params) for i in range(nDraws))
 
     nullDifferenceDistribution = _dict_concatenate(results)
 
@@ -170,7 +170,7 @@ def _equate_within_pool(inputData, verbose=True):
     when computing EFRs, and need an equal number of +/- polarity trials. 
     '''
     r = np.random.RandomState(None)
-    errorStr = 'Expecting a 4d array, or list/tuple of 3D arrays'
+    errorStr = 'list/tuple of 3D arrays'
     if isinstance(inputData, np.ndarray):
         if len(inputData.shape) == 3:
             inputData = [inputData]
@@ -179,7 +179,7 @@ def _equate_within_pool(inputData, verbose=True):
 
     minAvail = np.Inf
     for x in inputData:
-        if not isinstance(x, np.ndarray):
+        if not isinstance(x, np.ndarray) or x.ndim != 3:
             raise ValueError(errorStr)
         if x.shape[1] < minAvail:
             minAvail = x.shape[1]
@@ -209,7 +209,7 @@ def _sample_with_replacement(inputData, verbose=True):
     resampled = list(inputData)
 
     for x in range(len(inputData)):
-        if not isinstance(inputData[x], np.ndarray):
+        if not isinstance(inputData[x], np.ndarray) or inputData[x].ndim != 3:
             raise ValueError(errorStr)
         tr = r.randint(inputData[x].shape[1], size=inputData[x].shape[1])
         resampled[x] = inputData[x][:, tr, :]
