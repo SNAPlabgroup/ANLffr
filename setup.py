@@ -10,7 +10,7 @@ from numpy.distutils.core import setup
 
 setup(
     name='ANLffr',
-    version='0.1.0beta2',
+    version='0.2.0beta',
     author='Hari Bharadwaj',
     author_email='hari@nmr.mgh.harvard.edu',
     packages=['anlffr', 'anlffr.helper', 'anlffr.externals'],

@@ -47,10 +47,9 @@ def bootfunc(inputFunction, x1, params, verbose=True):
 def permutation_distributions(inputFunction, x1, x2, params, verbose=True):
 
     '''
-    Returns the difference of x1 and x2 when computed using inputFunction, and
-    also the distribution of differences when the labels are shuffled at
-    random. inputFunction is expected to be one of the functions from
-    anlffr.spectral.
+    Returns x1-x2 when each is computed using inputFunction, and also the
+    distribution of differences when the labels are shuffled at random.
+    inputFunction is expected to be one of the functions from anlffr.spectral.
     '''
     try:
         nJobs = int(params['threads'])
@@ -85,6 +84,10 @@ def permutation_distributions(inputFunction, x1, x2, params, verbose=True):
 
 @verbose
 def _dict_diff(x1Res, x2Res, verbose=True):
+    '''
+    for each key in a dictionary, subtract x2 from x1. both assumed to be
+    arrays.
+    '''
     difference = {}
     usefulKeys = x1Res.keys()
     usefulKeys.remove('f')
@@ -100,7 +103,8 @@ def _dict_diff(x1Res, x2Res, verbose=True):
 @verbose
 def _dict_concatenate(resList, verbose=True):
     '''
-    Concatenates arrays in a list of dictionaries
+    Concatenates arrays in a list of dictionaries, as would be returned when
+    running anlffr.spectrum functions using joblib parallel instance.
     '''
     concatenated = {}
     usefulKeys = resList[0].keys()
@@ -118,14 +122,21 @@ def _dict_concatenate(resList, verbose=True):
 
 @verbose
 def _run_bootfunc(inputFunction, x1, params, verbose=True):
+    '''
+    the function actually being fed to joblib parallel for bootstrap
+    computation of mean and variance
+    '''
     x1s = _sample_with_replacement(x1)
     x1sRes = inputFunction(np.concatenate(x1s, axis=1), params)
 
-    return 
+    return x1sRes 
 
 
 @verbose
 def _get_null_difference(inputFunction, x1, x2, params, verbose=True):
+    '''
+    the function actually being fed to joblib parallel for permutation testing 
+    '''
     x1s, x2s = _label_shuffler(x1, x2)
     x1sRes = inputFunction(np.concatenate(x1s, axis=1), params)
     x2sRes = inputFunction(np.concatenate(x2s, axis=1), params)
@@ -138,8 +149,8 @@ def _get_null_difference(inputFunction, x1, x2, params, verbose=True):
 @verbose
 def _label_shuffler(x1, x2, verbose=True):
     '''
-    randomly reassigns the trials beloning to x1 and x2, and returns two arrays
-    the same size as the original input
+    randomly reassigns the trials belonging to x1 and x2, and returns two
+    arrays the same size as the original input
     '''
     r = np.random.RandomState(None)
     x1s = np.empty(x1.shape)
@@ -157,19 +168,16 @@ def _label_shuffler(x1, x2, verbose=True):
 @verbose
 def _equate_within_pool(inputData, verbose=True):
     '''
-    Sets the number of trials per "pool" of data to be equal For example:
-    useful when computing EFRs, and need an equal number of +/- polarity
-    trials. 
+    Sets the number of trials per list element to be equal For example: useful
+    when computing EFRs, and need an equal number of +/- polarity trials. 
     '''
     r = np.random.RandomState(None)
-    errorStr = 'Expecting a 4d array, or list/tuple of arrays'
+    errorStr = 'Expecting a 4d array, or list/tuple of 3D arrays'
     if isinstance(inputData, np.ndarray):
         if len(inputData.shape) == 3:
-            inputData = inputData[np.newaxis, :, :, :]
-        elif len(inputData.shape) < 3 or len(inputData.shape) > 4:
+            inputData = [inputData]
+        else:
             raise ValueError(errorStr)
-    else:
-        inputData = np.array(inputData, ndmin=4)
 
     minAvail = np.Inf
     for x in inputData:
@@ -193,18 +201,18 @@ def _sample_with_replacement(inputData, verbose=True):
     sampling the original with replacement
     '''
     r = np.random.RandomState(None)
-    errorStr = 'Expecting a 4d array, or list/tuple of arrays'
+    errorStr = 'Expecting a list/tuple of 3D arrays'
     if isinstance(inputData, np.ndarray):
         if len(inputData.shape) == 3:
-            inputData = inputData[np.newaxis, :, :, :]
-        elif len(inputData.shape) < 3 or len(inputData.shape) > 4:
+            inputData = [inputData]
+        else:
             raise ValueError(errorStr)
-    else:
-        inputData = np.array(inputData, ndmin=4)
 
-    resampled = np.empty(inputData.shape)
+    resampled = list(inputData)
 
     for x in range(len(inputData)):
+        if not isinstance(inputData[x], np.ndarray):
+            raise ValueError(errorStr)
         tr = r.randint(inputData[x].shape[1], size=inputData[x].shape[1])
         resampled[x] = inputData[x][:, tr, :]
 
