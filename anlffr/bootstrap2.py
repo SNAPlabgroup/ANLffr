@@ -20,9 +20,8 @@ def bootfunc(inputFunction, x1, params, verbose=True):
         for i in range(nDraws):
             results.append(_run_bootfunc(inputFunction, x1, params))
     else:
-        P = Parallel(nJobs)
-        d = P(delayed(_run_bootfunc))
-        results = (d(inputFunction, x1, params) for i in range(nDraws))
+        P = Parallel(n_jobs=nJobs)
+        P(delayed(_run_bootfunc)(inputFunction, x1, params) for i in range(nDraws))
 
     concatenated = _dict_concatenate(results)
 
@@ -73,9 +72,8 @@ def permutation_distributions(inputFunction, x1, x2, params, verbose=True):
             results.append(get_null_difference(inputFunction, x1, x2, params))
 
     else:
-        P = Parallel(nJobs)
-        d = P(delayed(get_null_difference))
-        results = (d(inputFunction, x1, x2, params) for i in range(nDraws))
+        P = Parallel(n_jobs=nJobs)
+        P(delayed(_get_null_difference)(inputFunction, x1, x2, params) for i in range(nDraws))
 
     nullDifferenceDistribution = _dict_concatenate(results)
 
