@@ -43,7 +43,7 @@ def bootfunc(inputFunction, x1, params, verbose=True):
     for k in usefulKeys:
         output[k] = {}
         output[k]['bootMean'] = np.mean(concatenated[k], axis=0)
-        output[k]['bootVar'] = np.var(concatenated[k], axis=0)
+        output[k]['bootVariance'] = np.var(concatenated[k], axis=0)
         output[k]['nDraws'] = nDraws
         output[k]['nPerDraw'] = n
         if params['returnIndividualBootstrapResults']:
@@ -72,9 +72,6 @@ def permutation_distributions(inputFunction, x1, x2, params, verbose=True):
         nJobs = 1
 
     nDraws = int(params['nDraws'])
-
-    if len(x1) != len(x2):
-        raise ValueError('x1 and x2 must have same first dimension')
 
     x1, n1 = _equate_within_pool(x1)
     x2, n2 = _equate_within_pool(x2)
