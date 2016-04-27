@@ -169,8 +169,8 @@ def _label_shuffler(x1, x2, verbose=True):
     x1s = []
     x2s = []
     for y in range(len(x1)):
-        x1s.append(np.empty(x1.shape))
-        x2s.append(np.empty(x2.shape))
+        x1s.append(np.empty(x1[y].shape))
+        x2s.append(np.empty(x2[y].shape))
 
     for y in range(len(x1)):
         temp = np.concatenate([x1[y], x2[y]], 1)
