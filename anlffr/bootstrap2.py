@@ -36,10 +36,12 @@ def bootfunc(inputFunction, x1, params, verbose=True):
 
     output = {}
     usefulKeys = list(concatenated.keys())
+    print(usefulKeys)
     output['f'] = concatenated['f']
     usefulKeys.remove('f')
 
     for k in usefulKeys:
+        output[k] = {}
         output[k]['bootMean'] = np.mean(concatenated[k], axis=0)
         output[k]['bootVar'] = np.var(concatenated[k], axis=0)
         output[k]['nDraws'] = nDraws
