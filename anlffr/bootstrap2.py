@@ -76,8 +76,8 @@ def permutation_distributions(inputFunction, x1, x2, params, verbose=True):
     x1, n1 = _equate_within_pool(x1)
     x2, n2 = _equate_within_pool(x2)
     
-    x1Res = inputFunction(x1, params)
-    x2Res = inputFunction(x2, params)
+    x1Res = inputFunction(np.concatenate(x1, axis=1), params)
+    x2Res = inputFunction(np.concatenate(x2, axis=1), params)
     difference = _dict_diff(x1Res, x2Res)
 
     if nJobs == 1:
