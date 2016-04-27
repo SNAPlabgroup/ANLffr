@@ -166,6 +166,8 @@ def _label_shuffler(x1, x2, verbose=True):
     arrays the same size as the original input
     '''
     r = np.random.RandomState(None)
+    x1s = []
+    x2s = []
     for y in range(len(x1)):
         x1s.append(np.empty(x1.shape))
         x2s.append(np.empty(x2.shape))
