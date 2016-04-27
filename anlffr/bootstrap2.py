@@ -166,8 +166,10 @@ def _label_shuffler(x1, x2, verbose=True):
     arrays the same size as the original input
     '''
     r = np.random.RandomState(None)
-    x1s = np.empty(x1.shape)
-    x2s = np.empty(x2.shape)
+    for y in range(len(x1)):
+        x1s.append(np.empty(x1.shape))
+        x2s.append(np.empty(x2.shape))
+
     for y in range(len(x1)):
         temp = np.concatenate([x1[y], x2[y]], 1)
         tempOrder = r.permutation(temp.shape[1])
