@@ -176,8 +176,8 @@ def _label_shuffler(x1, x2, verbose=True):
         temp = np.concatenate([x1[y], x2[y]], 1)
         tempOrder = r.permutation(temp.shape[1])
         temp = temp[:, tempOrder, :]
-        x1s[y] = temp[:, 0:x1.shape[1], :]
-        x2s[y] = temp[:, x1.shape[1]:, :]
+        x1s[y] = temp[:, 0:x1[y].shape[1], :]
+        x2s[y] = temp[:, x1[y].shape[1]:, :]
 
     return x1s, x2s
 
