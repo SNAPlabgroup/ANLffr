@@ -727,12 +727,7 @@ def mtppc(x, params, verbose=None, bootstrapMode=False):
         ntrials = x.shape[trialdim]
         nchans = 1
         logger.info('The data is of format %d trials x time (single channel)',
-                    ntrials)
-    else:
-        logger.error('Sorry! The data should be a 2 or 3 dimensional array!')
-
-    # Calculate the tapers
-    nfft, f, fInd = _get_freq_stuff(x, params, timedim)
+                    timedim)
     ntaps = params['tapers'][1]
     TW = params['tapers'][0]
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
@@ -1069,10 +1064,22 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     TW = params['tapers'][0]
 
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
+    
+    if params['pcaComponentNumber']:
+        pc = -1*np.array(params['pcaComponentNumber'])
+    else:
+        pc = -1*np.array([1])
+    
+    nPC = len(pc)
 
-    plv = np.zeros((ntaps, len(f)))
-    itc = np.zeros((ntaps, len(f)))
-    cspec = np.zeros((ntaps, len(f)))
+    plv = np.zeros((ntaps, nPC, len(f)))
+    itc = np.zeros((ntaps, nPC, len(f)))
+    cspec = np.zeros((ntaps, nPC, len(f)))
+
+    if params['returnEigenvectors']:
+        cspecV = np.zeros((ntaps, nPC, nchans, len(f)))
+        plvV = np.zeros((ntaps, nPC, nchans, len(f)))
+        itcV = np.zeros((ntaps, nPC, nchans, len(f)))
 
     useData = x
 
@@ -1093,21 +1100,30 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
 
         for fi in np.arange(0, len(f)):
             powerCsd = np.outer(C[:, fi], C[:, fi].conj())
-            powerEigenvals = linalg.eigh(powerCsd, eigvals_only=True)
-            cspec[k, fi] = powerEigenvals[-1] / nchans
+            powerEigenvals, powV = linalg.eigh(powerCsd)
+            cspec[k, :, fi] = powerEigenvals[pc] / nchans
 
             plvCsd = np.outer(plvC[:, fi], plvC[:, fi].conj())
-            plvEigenvals = linalg.eigh(plvCsd, eigvals_only=True)
-            plv[k, fi] = plvEigenvals[-1] / nchans
+            plvEigenvals, plvV = linalg.eigh(plvCsd)
+            plv[k, :, fi] = plvEigenvals[pc] / nchans
 
             itcCsd = np.outer(itcC[:, fi], itcC[:, fi].conj())
-            itcEigenvals = linalg.eigh(itcCsd, eigvals_only=True)
-            itc[k, fi] = itcEigenvals[-1] / nchans
+            itcEigenvals, itcV = linalg.eigh(itcCsd)
+            itc[k, fi] = itcEigenvals[pc] / nchans
+    
+            if params['returnEigenvectors']:
+                cspecV[k, :, :, fi] = powV[:, pc].squeeze()
+                plvV[k, :, :, fi] = plvV[:, pc].squeeze()
+                itcV[k, :, :, fi] = itcV[:, pc].squeeze()
 
     # Average over tapers and squeeze to pretty shapes
     out['spectrum'] = (cspec.mean(axis=0)).squeeze()
     out['plv'] = (plv.mean(axis=0)).squeeze()
     out['itc'] = (itc.mean(axis=0)).squeeze()
+    
+    out['spectrumV'] = cspecV.squeeze()
+    out['plvV'] = plvV.squeeze()
+    out['itcV'] = itcV.squeeze()
 
     if bootstrapMode:
         out['f'] = f
@@ -1133,7 +1149,7 @@ def _get_freq_stuff(x, params, timeDim=2, verbose=None):
                 'to default setting of nfft = 2**ceil(log2(nTimePts))\n')
 
     if 'nfft' not in params or badNfft:
-        nfft = int(2.0 ** ceil(sci.log2(x.shape[timeDim])))
+        nfft = int(2.0 ** ceil(np.log2(x.shape[timeDim])))
     else:
         nfft = int(params['nfft'])
 
