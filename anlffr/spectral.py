@@ -1099,30 +1099,31 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
         
         for fi in np.arange(0, len(f)):
             powerCsd = np.outer(C[:, fi], C[:, fi].conj())
-            powerEigenvals, powV = linalg.eigh(powerCsd)
+            powerEigenvals, powEigenvec = linalg.eigh(powerCsd)
             cspec[k, :, fi] = powerEigenvals[pc] / nchans
 
             plvCsd = np.outer(plvC[:, fi], plvC[:, fi].conj())
-            plvEigenvals, plvV = linalg.eigh(plvCsd)
+            plvEigenvals, plvEigenvec = linalg.eigh(plvCsd)
             plv[k, :, fi] = plvEigenvals[pc] / nchans
 
             itcCsd = np.outer(itcC[:, fi], itcC[:, fi].conj())
-            itcEigenvals, itcV = linalg.eigh(itcCsd)
+            itcEigenvals, itcEigenvec = linalg.eigh(itcCsd)
             itc[k, :, fi] = itcEigenvals[pc] / nchans
     
             if params['returnEigenvectors']:
-                cspecV[k, :, :, fi] = powV[:, pc].T
-                plvV[k, :, :, fi] = plvV[:, pc].T
-                itcV[k, :, :, fi] = itcV[:, pc].T
+                cspecV[k, :, :, fi] = powEigenvec[:, pc].T
+                plvV[k, :, :, fi] = plvEigenvec[:, pc].T
+                itcV[k, :, :, fi] = itcEigenvec[:, pc].T
 
     # Average over tapers and squeeze to pretty shapes
     out['spectrum'] = (cspec.mean(axis=0)).squeeze()
     out['plv'] = (plv.mean(axis=0)).squeeze()
     out['itc'] = (itc.mean(axis=0)).squeeze()
     
-    out['spectrumV'] = cspecV.squeeze()
-    out['plvV'] = plvV.squeeze()
-    out['itcV'] = itcV.squeeze()
+    if params['returnEigenvectors']:
+        out['spectrumV'] = cspecV.squeeze()
+        out['plvV'] = plvV.squeeze()
+        out['itcV'] = itcV.squeeze()
 
     if bootstrapMode:
         out['f'] = f
