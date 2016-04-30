@@ -1108,7 +1108,7 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
 
             itcCsd = np.outer(itcC[:, fi], itcC[:, fi].conj())
             itcEigenvals, itcV = linalg.eigh(itcCsd)
-            itc[k, fi] = itcEigenvals[pc] / nchans
+            itc[k, :, fi] = itcEigenvals[pc] / nchans
     
             if params['returnEigenvectors']:
                 cspecV[k, :, :, fi] = powV[:, pc].T
