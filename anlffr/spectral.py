@@ -1097,7 +1097,6 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
 
         plvC = (xw / abs(xw)).mean(axis=trialdim).squeeze()
         
-
         for fi in np.arange(0, len(f)):
             powerCsd = np.outer(C[:, fi], C[:, fi].conj())
             powerEigenvals, powV = linalg.eigh(powerCsd)
@@ -1112,9 +1111,9 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
             itc[k, fi] = itcEigenvals[pc] / nchans
     
             if params['returnEigenvectors']:
-                cspecV[k, :, :, fi] = powV[:, pc].squeeze()
-                plvV[k, :, :, fi] = plvV[:, pc].squeeze()
-                itcV[k, :, :, fi] = itcV[:, pc].squeeze()
+                cspecV[k, :, :, fi] = powV[:, pc].T
+                plvV[k, :, :, fi] = plvV[:, pc].T
+                itcV[k, :, :, fi] = itcV[:, pc].T
 
     # Average over tapers and squeeze to pretty shapes
     out['spectrum'] = (cspec.mean(axis=0)).squeeze()
