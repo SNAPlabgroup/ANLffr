@@ -1066,7 +1066,7 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
     
     if params['pcaComponentNumber']:
-        pc = -1*np.array(params['pcaComponentNumber'])
+        pc = -1*np.array([params['pcaComponentNumber']]).squeeze()
     else:
         pc = -1*np.array([1])
     
@@ -1077,9 +1077,9 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     cspec = np.zeros((ntaps, nPC, len(f)))
 
     if params['returnEigenvectors']:
-        cspecV = np.zeros((ntaps, nPC, nchans, len(f)))
-        plvV = np.zeros((ntaps, nPC, nchans, len(f)))
-        itcV = np.zeros((ntaps, nPC, nchans, len(f)))
+        cspecV = np.zeros((ntaps, nPC, nchans, len(f)), dtype=complex)
+        plvV = np.zeros((ntaps, nPC, nchans, len(f)), dtype=complex)
+        itcV = np.zeros((ntaps, nPC, nchans, len(f)), dtype=complex)
 
     useData = x
 
