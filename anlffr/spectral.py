@@ -1067,8 +1067,9 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     
     if params['pcaComponentNumber']:
         pc = -1*np.array([params['pcaComponentNumber']]).squeeze()
+        pc = np.atleast_1d(pc)
     else:
-        pc = -1*np.array([1])
+        pc = np.atleast_1d(-1*np.array([1]))
     
     nPC = len(pc)
 

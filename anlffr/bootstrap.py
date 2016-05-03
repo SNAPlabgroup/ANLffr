@@ -42,6 +42,7 @@ def bootfunc(inputFunction, x1, params, verbose=True):
 
     for k in usefulKeys:
         output[k] = {}
+        print(concatenated[k].shape)
         output[k]['bootMean'] = np.mean(concatenated[k], axis=0)
         output[k]['bootVariance'] = np.var(concatenated[k], axis=0)
         output[k]['nDraws'] = nDraws
@@ -128,7 +129,7 @@ def _dict_concatenate(resList, verbose=True):
         toConcatenate = []
         for y in range(len(resList)):
             toConcatenate.append(resList[y][k])
-        concatenated[k] = np.vstack(toConcatenate)
+        concatenated[k] = np.array(toConcatenate)
 
     return concatenated
 
