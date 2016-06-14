@@ -1077,7 +1077,7 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     itc = np.zeros((ntaps, nPC, len(f)))
     cspec = np.zeros((ntaps, nPC, len(f)))
 
-    if params['returnEigenvectors']:
+    if 'returnEigenvectors' in params.keys() and params['returnEigenvectors']:
         cspecV = np.zeros((ntaps, nPC, nchans, len(f)), dtype=complex)
         plvV = np.zeros((ntaps, nPC, nchans, len(f)), dtype=complex)
         itcV = np.zeros((ntaps, nPC, nchans, len(f)), dtype=complex)
@@ -1121,7 +1121,7 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     out['plv'] = (plv.mean(axis=0)).squeeze()
     out['itc'] = (itc.mean(axis=0)).squeeze()
     
-    if params['returnEigenvectors']:
+    if 'returnEigenvectors' in params.keys() and params['returnEigenvectors']:
         out['spectrumV'] = cspecV.squeeze()
         out['plvV'] = plvV.squeeze()
         out['itcV'] = itcV.squeeze()
@@ -1269,6 +1269,8 @@ def generate_parameters(verbose=True, **kwArgs):
     params['returnIndividualBootstrapResults'] = False
     params['debugMode'] = False
     params['bootstrapMode'] = False
+    params['returnEigenvectors'] = False
+    params['pcaComponentNumber'] = False
 
     userKeys = kwArgs.keys()
 
