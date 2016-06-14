@@ -1132,6 +1132,71 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     else:
         return (out, f)
 
+@verbose_decorator
+def mtcpca_autocorr(x, params, verbose=None, bootstrapMode=False):
+    try:
+        bootstrapMode = params['bootstrapMode']
+    except KeyError:
+        bootstrapMode = bootstrapMode
+
+    out = {}
+
+    logger.info('Running Multitaper Complex PCA based ' +
+                'plv and power estimation.')
+    x = x.squeeze()
+    if len(x.shape) == 3:
+        timedim = 2
+        trialdim = 1
+        ntrials = x.shape[trialdim]
+        nchans = x.shape[0]
+        logger.info('The data is of format %d channels x %d trials x time',
+                    nchans, ntrials)
+    else:
+        logger.error('Sorry! The data should be a 3 dimensional array!')
+
+    # Calculate the tapers
+    nfft = 2**int(np.ceil(np.log2(2*x.shape[timedim]-1)))
+    f = np.linspace(0.0, 1.0, nfft/2+1)*(params['Fs']/2)
+
+    ntaps = params['tapers'][1]
+    TW = params['tapers'][0]
+    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
+    cspec = np.zeros((ntaps, len(f)))
+    cspecV = np.zeros((ntaps, nchans, len(f)), dtype=complex)
+    
+    for k, tap in enumerate(w):
+        xw = np.fft.rfft((tap * x), n=nfft, axis=timedim)
+        C = xw.mean(axis=trialdim).squeeze()
+        
+        for fi in np.arange(0, len(f)):
+            powerCsd = np.outer(C[:, fi], C[:, fi].conj())
+            powerEigenvals, powEigenvec = linalg.eigh(powerCsd)
+            cspec[k, fi] = powerEigenvals[-1] / nchans
+            cspecV[k, :, fi] = powEigenvec[:, -1].squeeze()
+    
+    cspec = cspec.mean(axis=0).squeeze()
+    cspecV = cspecV.mean(axis=0).squeeze()
+    xx = np.zeros(f.shape, dtype=complex)
+    xmean = x.mean(axis=timedim, keepdims=True)
+    X = np.fft.rfft(x - xmean, axis=timedim, n=nfft).mean(axis=1)
+
+    for fi in range(len(f)):
+        xx[fi] = np.dot(X[:, fi], cspecV[:, fi])
+
+    recovered = np.fft.irfft(xx, n=nfft)
+    a = np.fft.irfft(xx * np.conj(xx), n=nfft)[:x.shape[timedim]]
+    t = np.arange(0, x.shape[timedim] / params['Fs'], 1/params['Fs'])
+
+    if bootstrapMode:
+        out['ac'] = a / a[0]
+        out['t'] = t
+        out['mtcspec'] = cspec
+        out['f'] = f
+        out['recovered'] = recovered
+        return out
+    else:
+        return (a / a[0], t, cspec, f, recovered)
+
 
 @verbose_decorator
 def _get_freq_stuff(x, params, timeDim=2, verbose=None):
