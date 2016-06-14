@@ -1065,7 +1065,7 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
 
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
     
-    if params['pcaComponentNumber']:
+    if 'pcaComponentNumber' in params.keys() and params['pcaComponentNumber']:
         pc = -1*np.array([params['pcaComponentNumber']]).squeeze()
         pc = np.atleast_1d(pc)
     else:
