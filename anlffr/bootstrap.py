@@ -17,6 +17,7 @@ def bootfunc(inputFunction, x1, params, verbose=True):
         nJobs = int(params['threads'])
     except ImportError:
         logger.warning('joblib not installed; cannot run in parallel.')
+        nJobs = 1
     except KeyError:
         nJobs = 1
 
