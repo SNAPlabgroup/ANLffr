@@ -1,5 +1,4 @@
 import numpy as np
-from anlffr import spectral
 from .utils import logger, verbose
 import time
 
@@ -46,6 +45,10 @@ def bootfunc(inputFunction, x1, params, verbose=True):
         print(concatenated[k].shape)
         output[k]['bootMean'] = np.mean(concatenated[k], axis=0)
         output[k]['bootVariance'] = np.var(concatenated[k], axis=0)
+        output[k]['percentile2p5'] = np.percentile(concatenated[k], 2.5, 
+                                                   axis=0)
+        output[k]['percentile97p5'] = np.percentile(concatenated[k], 97.5, 
+                                                    axis=0)
         output[k]['nDraws'] = nDraws
         output[k]['nPerDraw'] = n
         if params['returnIndividualBootstrapResults']:
@@ -63,7 +66,6 @@ def permutation_distributions(inputFunction, x1, x2, params, verbose=True):
     distribution of differences when the labels are shuffled at random.
     inputFunction is expected to be one of the functions from anlffr.spectral.
     '''
-    startTime = time.time()
     params = _fix_params(params)
     try:
         from joblib import Parallel, delayed
@@ -85,7 +87,7 @@ def permutation_distributions(inputFunction, x1, x2, params, verbose=True):
     if nJobs == 1:
         results = []
         for i in range(nDraws):
-            results.append(get_null_difference(inputFunction, x1, x2, params))
+            results.append(_get_null_difference(inputFunction, x1, x2, params))
 
     else:
         P = Parallel(n_jobs=nJobs)
