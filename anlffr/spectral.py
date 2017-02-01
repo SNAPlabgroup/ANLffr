@@ -147,7 +147,7 @@ def mtplv(x, params, verbose=None):
 
     # Make space for the PLV result
 
-    plvtap = np.zeros((ntaps, nchans, nfft))
+    plvtap = np.zeros((ntaps, nchans, len(fInd)))
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
@@ -247,8 +247,8 @@ def mtspec(x, params, verbose=None):
     TW = params['tapers'][0]
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
-    S = np.zeros((ntaps, nchans, nfft))
-    N = np.zeros((ntaps, nchans, nfft))
+    S = np.zeros((ntaps, nchans, len(fInd)))
+    N = np.zeros((ntaps, nchans, len(fInd)))
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
@@ -360,7 +360,7 @@ def mtphase(x, params, verbose=None):
     TW = params['tapers'][0]
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
-    Ph = np.zeros((ntaps, nchans, nfft))
+    Ph = np.zeros((ntaps, nchans, len(fInd)))
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
@@ -440,7 +440,7 @@ def mtcpca(x, params, verbose=None):
     TW = params['tapers'][0]
     w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
 
-    plv = np.zeros((ntaps, nfft))
+    plv = np.zeros((ntaps, len(fInd)))
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
@@ -536,7 +536,7 @@ def mtcspec(x, params, verbose=None):
 
     # Make space for the PLV result
 
-    cspec = np.zeros((ntaps, nfft))
+    cspec = np.zeros((ntaps, len(fInd)))
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
@@ -636,8 +636,8 @@ def mtcpca_timeDomain(x, params, verbose=None):
     w, conc = dpss_windows(x.shape[timedim], 1, 1)
     w = w.squeeze() / w.max()
 
-    cpc_freq = np.zeros(nfft, dtype=np.complex)
-    cspec = np.zeros(nfft)
+    cpc_freq = np.zeros(len(fInd), dtype=np.complex)
+    cspec = np.zeros(len(nfft))
     xw = np.fft.rfft(w * x, n=nfft, axis=timedim)
     C = (xw.mean(axis=trialdim)).squeeze()
     Cnorm = C / ((abs(xw).mean(axis=trialdim)).squeeze())
@@ -651,7 +651,7 @@ def mtcpca_timeDomain(x, params, verbose=None):
     # Filter through spectrum, do ifft.
     cscale = cspec ** 0.5
     cscale = cscale / cscale.max()  # Maxgain of filter = 1
-    y_cpc = sci.ifft(cpc_freq * cscale)[:x.shape[timedim]]
+    y_cpc = np.fft.irfft(cpc_freq * cscale)[:x.shape[timedim]]
 
     # Do time domain PCA
     x_ave = x.mean(axis=trialdim)
@@ -736,7 +736,7 @@ def mtppc(x, params, verbose=None, bootstrapMode=False):
 
     # Make space for the result
 
-    ppc = np.zeros((ntaps, nchans, nfft))
+    ppc = np.zeros((ntaps, nchans, len(fInd)))
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
@@ -854,7 +854,7 @@ def mtspecraw(x, params, verbose=None, bootstrapMode=False):
 
     # Make space for the results
 
-    Sraw = np.zeros((ntaps, nchans, nfft))
+    Sraw = np.zeros((ntaps, nchans, len(fInd)))
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
@@ -943,7 +943,7 @@ def mtpspec(x, params, verbose=None, bootstrapMode=False):
 
     # Make space for the PLV result
 
-    pspec = np.zeros((ntaps, nchans, nfft))
+    pspec = np.zeros((ntaps, nchans, len(fInd)))
 
     for ch in np.arange(0, nchans):
         for k, tap in enumerate(w):
