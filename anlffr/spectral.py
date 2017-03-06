@@ -177,6 +177,8 @@ def mtplv(x, params, verbose=None):
 def mtspec(x, params, verbose=None):
     """Multitaper Spectrum and SNR estimate
 
+    Noise floor estimate obtained by substituting random phases in fft
+
     Parameters
     ----------
     x - NumPy Array
@@ -188,9 +190,6 @@ def mtspec(x, params, verbose=None):
       params['tapers'] - [TW, Number of tapers]
 
       params['fpass'] - Freqency range of interest, e.g. [5, 1000]
-
-      params['noisefloortype'] - (optional) 1: random phase,
-      0 (default): flip-phase on half the trials
 
     verbose : bool, str, int, or None
         The verbosity of messages to print. If a str, it can be either DEBUG,
@@ -211,8 +210,7 @@ def mtspec(x, params, verbose=None):
         Dictionary with the following keys:
          mtspec - Multitapered spectrum (channel x frequency)
 
-         mtspec_* - Noise floor estimate, where * is 'randomPhase' if
-         params['noisefloortype'] == 1, and 'noiseFloorViaPhaseFlip' otherwise
+         mtspec_* - Noise floor estimate
 
          f - Frequency vector matching plv
 
@@ -256,26 +254,13 @@ def mtspec(x, params, verbose=None):
 
         S[k, :, :] = abs(xw.mean(axis=trialdim))
 
-        if ('noisefloortype' in params) and (params['noisefloortype'] == 1):
-            randph = np.random.random_sample(xw.shape) * 2 * sci.pi
-            N[k, :, :] = abs((xw*sci.exp(1j*randph)).mean(axis=trialdim))
-            noiseTag = 'noiseFloorViaRandomPhase'
-            logger.info('using random phase for noise floor estimate')
-        else:
-            randsign = np.ones(xw.shape)
+        randph = np.random.random_sample(xw.shape) * 2 * sci.pi
+        N[k, :, :] = abs((xw*sci.exp(1j*randph)).mean(axis=trialdim))
 
-            # reflects fix to bootstrapmode parameter
-            if bootstrapMode and 'bootstrapTrialsSelected' in params:
-                flipTheseTrials = np.where(
-                    (params['bootstrapTrialsSelected'] % 2) == 0)
-            else:
-                flipTheseTrials = np.arange(0, ntrials, 2)
-
-            randsign[:, flipTheseTrials, :] = -1
-            N[k, :, :] = abs((xw*(randsign.squeeze())).mean(axis=trialdim))
-            noiseTag = 'noiseFloorViaPhaseFlip'
-            logger.info('flipping phase of half of the trials ' +
-                        'for noise floor estimate')
+        logger.warning('using random phases for noise floor estimate...' +
+                       'noise floor likely to be inaccurate '+
+                       'when bootstrap resampling, but may be ' +
+                       'fine for a single-shot estimate')
 
     # Average over tapers and squeeze to pretty shapes
     S = S.mean(axis=0)
@@ -286,7 +271,7 @@ def mtspec(x, params, verbose=None):
     if bootstrapMode:
         out = {}
         out['mtspec'] = S
-        out['mtspec_' + noiseTag] = N
+        out['mtspec_noise'] = N
         out['f'] = f
 
         return out
@@ -986,11 +971,6 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     spectral.mtcpca(data, params, ...) with ITC = 0
     spectral.mtcpca(data, params, ...) with ITC = 1
     spectral.mtcspec(data, params, ...)
-
-    With the exception that this function returns a dictionary for S + N, each
-    of which have keys "plv_*" and "spectrum_*", where * is "normalPhase" or
-    "noiseFloorViaPhaseFlip" (which obtains the "noise floor" by flipping the
-    phase of alternate trials and running the computations)
 
     Gets power spectra and plv on the same set of data using multitaper and
     complex PCA. 
