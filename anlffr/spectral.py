@@ -257,12 +257,12 @@ def mtspec(x, params, verbose=None):
         S[k, :, :] = abs(xw.mean(axis=trialdim))
 
         if ('noisefloortype' in params) and (params['noisefloortype'] == 1):
-            randph = sci.rand(nchans, ntrials, nfft) * 2 * sci.pi
+            randph = sci.rand(xw.shape) * 2 * sci.pi
             N[k, :, :] = abs((xw*sci.exp(1j*randph)).mean(axis=trialdim))
             noiseTag = 'noiseFloorViaRandomPhase'
             logger.info('using random phase for noise floor estimate')
         else:
-            randsign = np.ones((nchans, ntrials, nfft))
+            randsign = np.ones(xw.shape)
 
             # reflects fix to bootstrapmode parameter
             if bootstrapMode and 'bootstrapTrialsSelected' in params:
