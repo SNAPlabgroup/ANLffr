@@ -257,7 +257,7 @@ def mtspec(x, params, verbose=None):
         S[k, :, :] = abs(xw.mean(axis=trialdim))
 
         if ('noisefloortype' in params) and (params['noisefloortype'] == 1):
-            randph = sci.rand(xw.shape) * 2 * sci.pi
+            randph = np.random.random_sample(xw.shape) * 2 * sci.pi
             N[k, :, :] = abs((xw*sci.exp(1j*randph)).mean(axis=trialdim))
             noiseTag = 'noiseFloorViaRandomPhase'
             logger.info('using random phase for noise floor estimate')
