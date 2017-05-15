@@ -2,6 +2,31 @@ import numpy as np
 from .utils import logger, verbose
 import time
 
+'''
+Module: anlffr.bootstrap
+
+functions to aid random resampling when using anlffr.spectral functions
+
+note: these aren't particularly clever or efficient; but if you're going to
+resample, you might as well do it in parallel. 
+
+Function Listing
+================
+    bootfunc: to run an anlffr.spectral function a bunch of times, sampling
+    the data with replacement each time
+
+    permutation_distributions: compute a difference between FUNC(x1) and
+    FUNC(x2), where FUNC is a function from anlffr.spectral. Then shuffle the
+    labels and recompute the difference multiple times, and return the
+    distribution of null differences. Possibly useful if you have two
+    conditions, and you want to determine whether there is a "significant"
+    difference between them.
+
+Last modified: 2017-05-15 LV
+
+@author Leonard Varghese
+'''
+
 @verbose
 def bootfunc(inputFunction, x1, params, verbose=True):
     '''
@@ -22,7 +47,6 @@ def bootfunc(inputFunction, x1, params, verbose=True):
 
     nDraws = int(params['nDraws'])
 
-    x1, n = _equate_within_pool(x1)
     if nJobs == 1:
         results = []
         for i in range(nDraws):
@@ -50,11 +74,12 @@ def bootfunc(inputFunction, x1, params, verbose=True):
         output[k]['percentile97p5'] = np.percentile(concatenated[k], 97.5, 
                                                     axis=0)
         output[k]['nDraws'] = nDraws
-        output[k]['nPerDraw'] = n
-        if params['returnIndividualBootstrapResults']:
+        output[k]['nPerDraw'] = x1.shape[1]
+        if params['indivDraw']:
             output[k]['indivDraw'] = concatenated[k]
 
     logger.info('\nCompleted in: {} s'.format(time.time() - startTime))
+
     return output
 
 
@@ -77,11 +102,11 @@ def permutation_distributions(inputFunction, x1, x2, params, verbose=True):
 
     nDraws = int(params['nDraws'])
 
-    x1, n1 = _equate_within_pool(x1)
-    x2, n2 = _equate_within_pool(x2)
+    #x1, n1 = _equate_within_pool(x1)
+    #x2, n2 = _equate_within_pool(x2)
     
-    x1Res = inputFunction(np.concatenate(x1, axis=1), params)
-    x2Res = inputFunction(np.concatenate(x2, axis=1), params)
+    x1Res = inputFunction(x1, params)
+    x2Res = inputFunction(x2, params)
     difference = _dict_diff(x1Res, x2Res)
 
     if nJobs == 1:
@@ -144,7 +169,7 @@ def _run_bootfunc(inputFunction, x1, params, verbose=True):
     computation of mean and variance
     '''
     x1s = _sample_with_replacement(x1)
-    x1sRes = inputFunction(np.concatenate(x1s, axis=1), params)
+    x1sRes = inputFunction(x1s, params)
 
     return x1sRes 
 
@@ -170,18 +195,15 @@ def _label_shuffler(x1, x2, verbose=True):
     arrays the same size as the original input
     '''
     r = np.random.RandomState(None)
-    x1s = []
-    x2s = []
-    for y in range(len(x1)):
-        x1s.append(np.empty(x1[y].shape))
-        x2s.append(np.empty(x2[y].shape))
+    
+    x1s = np.empty(x1.shape)
+    x2s = np.empty(x2.shape)
 
-    for y in range(len(x1)):
-        temp = np.concatenate([x1[y], x2[y]], 1)
-        tempOrder = r.permutation(temp.shape[1])
-        temp = temp[:, tempOrder, :]
-        x1s[y] = temp[:, 0:x1[y].shape[1], :]
-        x2s[y] = temp[:, x1[y].shape[1]:, :]
+    temp = np.concatenate([x1, x2], 1)
+    tempOrder = r.permutation(temp.shape[1])
+    temp = temp[:, tempOrder, :]
+    x1s = temp[:, 0:x1.shape[1], :]
+    x2s = temp[:, x1.shape[1]:, :]
 
     return x1s, x2s
 
@@ -223,25 +245,18 @@ def _sample_with_replacement(inputData, verbose=True):
     sampling the original with replacement
     '''
     r = np.random.RandomState(None)
-    errorStr = 'Expecting a list/tuple of 3D arrays'
-    if isinstance(inputData, np.ndarray):
-        if len(inputData.shape) == 3:
-            inputData = [inputData]
-        else:
-            raise ValueError(errorStr)
 
-    resampled = list(inputData)
-
-    for x in range(len(inputData)):
-        if not isinstance(inputData[x], np.ndarray) or inputData[x].ndim != 3:
-            raise ValueError(errorStr)
-        tr = r.randint(inputData[x].shape[1], size=inputData[x].shape[1])
-        resampled[x] = inputData[x][:, tr, :]
+    tr = r.randint(inputData.shape[1], size=inputData.shape[1])
+    resampled = inputData[:, tr, :]
 
     return resampled
 
+
 @verbose
 def _fix_params(params):
+    '''
+    results should be in dictionary mode to work properly with these functions
+    '''
     fixedParams = dict(params)
     if ('bootstrapMode' not in params.keys() or
         fixedParams['bootstrapMode'] == False):
