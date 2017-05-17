@@ -22,7 +22,7 @@ Function Listing
     conditions, and you want to determine whether there is a "significant"
     difference between them.
 
-Last modified: 2017-05-15 LV
+Last modified: 2017-05-16 LV
 
 @author Leonard Varghese
 '''
@@ -180,8 +180,8 @@ def _get_null_difference(inputFunction, x1, x2, params, verbose=True):
     the function actually being fed to joblib parallel for permutation testing 
     '''
     x1s, x2s = _label_shuffler(x1, x2)
-    x1sRes = inputFunction(np.concatenate(x1s, axis=1), params)
-    x2sRes = inputFunction(np.concatenate(x2s, axis=1), params)
+    x1sRes = inputFunction(x1s, params)
+    x2sRes = inputFunction(x2s, params)
 
     nullDiff = _dict_diff(x1sRes, x2sRes) 
 

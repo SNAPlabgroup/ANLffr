@@ -61,7 +61,7 @@ References:
       J Clin Neurophys 125 1878--1898.
       http://dx.doi.org/10.1016/j.clinph.2014.01.011
 
-last updated: 2017-05-15 LV
+last updated: 2017-05-16 LV
 
 @author: Hari Bharadwaj
 
@@ -72,12 +72,12 @@ from math import ceil
 import scipy as sci
 from scipy import linalg
 from .utils import logger
-from .utils import verbose as verbose_decorator
+from .utils import verbose
 from multiprocessing import cpu_count
 from .dpss import dpss_windows
 
 
-@verbose_decorator
+@verbose
 def mtplv(x, params, verbose=None):
     """Multitaper Phase-Locking Value
 
@@ -170,7 +170,7 @@ def mtplv(x, params, verbose=None):
     return out
 
 
-@verbose_decorator
+@verbose
 def mtspec(x, params, verbose=None):
     """Multitaper Spectrum and SNR estimate
 
@@ -244,6 +244,12 @@ def mtspec(x, params, verbose=None):
 
     S = np.zeros((ntaps, nchans, len(fInd)))
     N = np.zeros((ntaps, nchans, len(fInd)))
+    
+    logger.warning('''using random phases for noise floor estimate...
+                   this is probably fine for a single shot estimate,
+                   but the noise floor returned when using
+                   this function in bootstrap resampling may be 
+                   inaccurate''')
 
     for k, tap in enumerate(w):
         logger.info('Doing Taper #%d', k)
@@ -254,10 +260,6 @@ def mtspec(x, params, verbose=None):
         randph = np.random.random_sample(xw.shape) * 2 * sci.pi
         N[k, :, :] = abs((xw*sci.exp(1j*randph)).mean(axis=trialdim))
 
-        logger.warning('using random phases for noise floor estimate...' +
-                       'noise floor likely to be inaccurate '+
-                       'when bootstrap resampling, but may be ' +
-                       'fine for a single-shot estimate')
 
     # Average over tapers and squeeze to pretty shapes
     S = S.mean(axis=0)
@@ -276,7 +278,7 @@ def mtspec(x, params, verbose=None):
         return (S, N, f)
 
 
-@verbose_decorator
+@verbose
 def mtphase(x, params, verbose=None):
     """Multitaper phase estimation
 
@@ -362,7 +364,7 @@ def mtphase(x, params, verbose=None):
         return (Ph, f)
 
 
-@verbose_decorator
+@verbose
 def mtcpca(x, params, verbose=None):
     """Multitaper complex PCA and PLV
 
@@ -434,7 +436,7 @@ def mtcpca(x, params, verbose=None):
         else:
             C = (xw / abs(xw)).mean(axis=trialdim).squeeze()
 
-        for fi in np.arange(0, nfft):
+        for fi in np.arange(0, C.shape[1]):
             Csd = np.outer(C[:, fi], C[:, fi].conj())
             vals = linalg.eigh(Csd, eigvals_only=True)
             plv[k, fi] = vals[-1] / nchans
@@ -455,7 +457,7 @@ def mtcpca(x, params, verbose=None):
 mtcplv = mtcpca
 
 
-@verbose_decorator
+@verbose
 def mtcspec(x, params, verbose=None):
     """Multitaper complex PCA and power spectral estimate
 
@@ -524,7 +526,7 @@ def mtcspec(x, params, verbose=None):
         logger.info('Doing Taper #%d', k)
         xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
         C = (xw.mean(axis=trialdim)).squeeze()
-        for fi in np.arange(0, nfft):
+        for fi in np.arange(0, C.shape[1]):
             Csd = np.outer(C[:, fi], C[:, fi].conj())
             vals = linalg.eigh(Csd, eigvals_only=True)
             cspec[k, fi] = vals[-1] / nchans
@@ -543,7 +545,7 @@ def mtcspec(x, params, verbose=None):
         return (cspec, f)
 
 
-@verbose_decorator
+@verbose
 def mtcpca_timeDomain(x, params, verbose=None):
     """Multitaper complex PCA and regular time-domain PCA and return time
     domain waveforms.
@@ -621,11 +623,11 @@ def mtcpca_timeDomain(x, params, verbose=None):
     w = w.squeeze() / w.max()
 
     cpc_freq = np.zeros(len(fInd), dtype=np.complex)
-    cspec = np.zeros(len(nfft))
+    cspec = np.zeros(len(fInd))
     xw = np.fft.rfft(w * x, n=nfft, axis=timedim)
     C = (xw.mean(axis=trialdim)).squeeze()
     Cnorm = C / ((abs(xw).mean(axis=trialdim)).squeeze())
-    for fi in np.arange(0, nfft):
+    for fi in np.arange(0, Cnorm.shape[1]):
         Csd = np.outer(Cnorm[:, fi], Cnorm[:, fi].conj())
         vals, vecs = linalg.eigh(Csd, eigvals_only=False)
         cspec[fi] = vals[-1]
@@ -653,7 +655,7 @@ def mtcpca_timeDomain(x, params, verbose=None):
         return (y_cpc, y_pc)
 
 
-@verbose_decorator
+@verbose
 def mtppc(x, params, verbose=None, bootstrapMode=False):
     """Multitaper Pairwise Phase Consistency
 
@@ -726,7 +728,7 @@ def mtppc(x, params, verbose=None, bootstrapMode=False):
         logger.info('Doing Taper #%d', k)
         xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
 
-        npairs = params['nPairs']
+        npairs = params['Npairs']
         trial_pairs = np.random.randint(0, ntrials, (npairs, 2))
 
         if(nchans == 1):
@@ -771,7 +773,7 @@ def mtppc(x, params, verbose=None, bootstrapMode=False):
         return (ppc, f)
 
 
-@verbose_decorator
+@verbose
 def mtspecraw(x, params, verbose=None, bootstrapMode=False):
     """Multitaper Spectrum (of raw signal)
 
@@ -859,7 +861,7 @@ def mtspecraw(x, params, verbose=None, bootstrapMode=False):
         return (Sraw, f)
 
 
-@verbose_decorator
+@verbose
 def mtpspec(x, params, verbose=None, bootstrapMode=False):
     """Multitaper Pairwise Power Spectral estimate
 
@@ -961,7 +963,7 @@ def mtpspec(x, params, verbose=None, bootstrapMode=False):
         return (pspec, f)
 
 
-@verbose_decorator
+@verbose
 def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
     """
     Convenience function to obtain plv, itc, and spectrum with cpca and
@@ -1127,80 +1129,79 @@ def mtcpca_all(x, params, verbose=None, bootstrapMode=False):
         return (out, f)
 
 
-'''untested and possibly not useful
-@verbose_decorator
-def mtcpca_autocorr(x, params, verbose=None, bootstrapMode=False):
-    """
-    This function aligns the phases of a multi-channel response using the
-    frequency-domain PCA ("complex PCA"), and then performs autocorrelation on
-    the resulting time series
-    """
+#'''untested and possibly not useful
+#@verbose
+#def mtcpca_autocorr(x, params, verbose=None, bootstrapMode=False):
+#    """
+#    This function aligns the phases of a multi-channel response using the
+#    frequency-domain PCA ("complex PCA"), and then performs autocorrelation on
+#    the resulting time series
+#    """
+#
+#    try:
+#        bootstrapMode = params['bootstrapMode']
+#    except KeyError:
+#        bootstrapMode = bootstrapMode
+#
+#    out = {}
+#
+#    logger.info('Running Multitaper Complex PCA based ' +
+#                'plv and power estimation.')
+#    x = x.squeeze()
+#    if len(x.shape) == 3:
+#        timedim = 2
+#        trialdim = 1
+#        ntrials = x.shape[trialdim]
+#        nchans = x.shape[0]
+#        logger.info('The data is of format %d channels x %d trials x time',
+#                    nchans, ntrials)
+#    else:
+#        logger.error('Sorry! The data should be a 3 dimensional array!')
+#
+#    nfft, f, _ = _get_freq_vector(x, params, timedim)
+#
+#    # Calculate the tapers
+#    ntaps = params['tapers'][1]
+#    TW = params['tapers'][0]
+#    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
+#    cspec = np.zeros((ntaps, len(f)))
+#    cspecV = np.zeros((ntaps, nchans, len(f)), dtype=complex)
+#    
+#    for k, tap in enumerate(w):
+#        xw = np.fft.rfft((tap * x), n=nfft, axis=timedim)
+#        C = xw.mean(axis=trialdim).squeeze()
+#        
+#        for fi in np.arange(0, len(f)):
+#            powerCsd = np.outer(C[:, fi], C[:, fi].conj())
+#            powerEigenvals, powEigenvec = linalg.eigh(powerCsd)
+#            cspec[k, fi] = powerEigenvals[-1] / nchans
+#            cspecV[k, :, fi] = powEigenvec[:, -1].squeeze()
+#    
+#    cspec = cspec.mean(axis=0).squeeze()
+#    cspecV = cspecV.mean(axis=0).squeeze()
+#    xx = np.zeros(f.shape, dtype=complex)
+#    xmean = x.mean(axis=timedim, keepdims=True)
+#    X = np.fft.rfft(x - xmean, axis=timedim, n=nfft).mean(axis=1)
+#
+#    for fi in range(len(f)):
+#        xx[fi] = np.dot(X[:, fi], cspecV[:, fi])
+#
+#    recovered = np.fft.irfft(xx, n=nfft)
+#    a = np.fft.irfft(xx * np.conj(xx), n=nfft)[:x.shape[timedim]]
+#    t = np.arange(0, x.shape[timedim] / params['Fs'], 1/params['Fs'])
+#
+#    if bootstrapMode:
+#        out['ac'] = a / a[0]
+#        out['t'] = t
+#        out['mtcspec'] = cspec
+#        out['f'] = f
+#        out['recovered'] = recovered
+#        return out
+#    else:
+#        return (a / a[0], t, cspec, f, recovered)
 
-    try:
-        bootstrapMode = params['bootstrapMode']
-    except KeyError:
-        bootstrapMode = bootstrapMode
 
-    out = {}
-
-    logger.info('Running Multitaper Complex PCA based ' +
-                'plv and power estimation.')
-    x = x.squeeze()
-    if len(x.shape) == 3:
-        timedim = 2
-        trialdim = 1
-        ntrials = x.shape[trialdim]
-        nchans = x.shape[0]
-        logger.info('The data is of format %d channels x %d trials x time',
-                    nchans, ntrials)
-    else:
-        logger.error('Sorry! The data should be a 3 dimensional array!')
-
-    nfft, f, _ = _get_freq_vector(x, params, timedim)
-
-    # Calculate the tapers
-    ntaps = params['tapers'][1]
-    TW = params['tapers'][0]
-    w, conc = dpss_windows(x.shape[timedim], TW, ntaps)
-    cspec = np.zeros((ntaps, len(f)))
-    cspecV = np.zeros((ntaps, nchans, len(f)), dtype=complex)
-    
-    for k, tap in enumerate(w):
-        xw = np.fft.rfft((tap * x), n=nfft, axis=timedim)
-        C = xw.mean(axis=trialdim).squeeze()
-        
-        for fi in np.arange(0, len(f)):
-            powerCsd = np.outer(C[:, fi], C[:, fi].conj())
-            powerEigenvals, powEigenvec = linalg.eigh(powerCsd)
-            cspec[k, fi] = powerEigenvals[-1] / nchans
-            cspecV[k, :, fi] = powEigenvec[:, -1].squeeze()
-    
-    cspec = cspec.mean(axis=0).squeeze()
-    cspecV = cspecV.mean(axis=0).squeeze()
-    xx = np.zeros(f.shape, dtype=complex)
-    xmean = x.mean(axis=timedim, keepdims=True)
-    X = np.fft.rfft(x - xmean, axis=timedim, n=nfft).mean(axis=1)
-
-    for fi in range(len(f)):
-        xx[fi] = np.dot(X[:, fi], cspecV[:, fi])
-
-    recovered = np.fft.irfft(xx, n=nfft)
-    a = np.fft.irfft(xx * np.conj(xx), n=nfft)[:x.shape[timedim]]
-    t = np.arange(0, x.shape[timedim] / params['Fs'], 1/params['Fs'])
-
-    if bootstrapMode:
-        out['ac'] = a / a[0]
-        out['t'] = t
-        out['mtcspec'] = cspec
-        out['f'] = f
-        out['recovered'] = recovered
-        return out
-    else:
-        return (a / a[0], t, cspec, f, recovered)
-'''
-
-
-@verbose_decorator
+@verbose
 def _get_freq_vector(x, params, timeDim=2, verbose=None):
     '''
     internal function, not really meant to be called/viewed by the end user
@@ -1221,14 +1222,24 @@ def _get_freq_vector(x, params, timeDim=2, verbose=None):
     else:
         nfft = int(params['nfft'])
 
-    f = np.linspace(0.0, params['Fs'] / 2.0, nfft/2+1)
+    f = np.fft.fftfreq(nfft, 1/params['Fs'])
+    # since np.fft.rfft in use:
+    if nfft % 2: 
+        maxIdx = int((nfft+1)/2)
+    else:
+        maxIdx = int((nfft/2) + 1)
+
+    # when even nfft, but nfft/2+1 point is a neg frequency using fftfreq
+    # symmetric so I think this is OK:
+    f = np.abs(f[0:maxIdx])
+
     fInd = ((f >= params['fpass'][0]) & (f <= params['fpass'][1]))
     f = f[fInd]
 
     return (nfft, f, fInd)
 
 
-@verbose_decorator
+@verbose
 def generate_parameters(verbose=True, **kwArgs):
 
     """
@@ -1346,7 +1357,7 @@ def generate_parameters(verbose=True, **kwArgs):
     return params
 
 
-@verbose_decorator
+@verbose
 def _validate_parameters(params, verbose=True):
     '''
     internal function, not really meant to be called/viewed by the end user
