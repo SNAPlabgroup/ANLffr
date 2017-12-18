@@ -9,7 +9,7 @@ import numpy as np
 from math import ceil
 from anlffr.utils import logger, verbose
 from mne import pick_channels
-from mne.filter import band_pass_filter
+from mne.filter import filter_data
 
 
 @verbose
@@ -55,9 +55,9 @@ def find_blinks(raw, event_id=998, thresh=100e-6, l_freq=0.5, h_freq=10,
         logger.info('Detecting blinks from channel %s' % ch_name)
 
     eog, _ = raw[ch_eog, :]
-    filteog = band_pass_filter(eog, sampling_rate, l_freq, h_freq,
-                               filter_length=filter_length,
-                               l_trans_bandwidth=l_trans_bandwidth)
+    filteog = filter_data(eog, sampling_rate, l_freq, h_freq,
+                          filter_length=filter_length,
+                          l_trans_bandwidth=l_trans_bandwidth)
 
     eog_events, blinkvals = peak_finder(filteog.squeeze(), thresh=thresh)
     eog_events_neg, blinkvals_neg = peak_finder(filteog.squeeze(),

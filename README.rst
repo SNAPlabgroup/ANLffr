@@ -1,13 +1,16 @@
 ANLffr
 ==========
 
-From the `Auditory Neuroscience Lab at Boston University <http://www.cns.bu.edu/~shinn/ANL/index.html>`_, 
+From the `Auditory Neuroscience Lab at Boston University <http://www.cns.bu.edu/~shinn/ANL/index.html>`_,
+and the `Systems Neuroscience of Auditory Perception lab at Purdue University <https://engineering.purdue.edu/SNAPLab>`_,
 a set of tools to analyze and interpret auditory steady-state responses, 
 particularly the subcortical kind commonly known as frequency-following responses (FFRs). 
 In particular, the package provides code for multitaper-analysis of spectra and phase locking 
 along with complex-principal component analysis of phase-locking for multichannel FFRs. 
-Support for "bootstrapping" any of the included functions is also available. 
-The project homepage is http://nmr.mgh.harvard.edu/~hari/ANLffr/.
+Support for "bootstrapping" any of the included functions is also available via the ``boostrap`` module.
+Finally, time-frequency analysis can also be performed flexibly using the ``tfr`` module.
+Although originally created to analyze steady-state electrophysiological responses,
+the generality of the spectral analysis and time-frequency analysis function allow them to be applied widely.
 Typical usage would begin with::
     
     #!/usr/bin/env python
@@ -23,18 +26,17 @@ Get the latest code
 
 To get the latest code using git, simply type::
 
-    git clone git://github.com/haribharadwaj/ANLffr.git
+    git clone https://github.com/SNAPsoftware/ANLffr.git
 
 To use the pre-release version v0.1.0, type::
 
     git checkout tags/v0.1.0
 
 If you don't have git installed, you can download a zip or tarball
-of the latest code: https://github.com/haribharadwaj/ANLffr/archive/v0.1.0.zip
-
+of the latest code: https://github.com/SNAPsoftware/ANLffr/archive/master.zip
 If you have pip, you may be able to download and install anlffr in one step using (and hence skip the "Install anlffr" steps below)::
 
-    pip install git+https://github.com/haribharadwaj/ANLffr.git --user
+    pip install git+https://github.com/SNAPsoftware/ANLffr.git --user
 
 Install anlffr
 --------------
@@ -57,15 +59,11 @@ Packages NumPy >= 1.4, SciPy >= 0.7.2 are required for the code in the spectral.
 
 Getting Started
 ---------------
-At the `project homepage <http://nmr.mgh.harvard.edu/~hari/ANLffr/>`_, 
-you can find more extensive and growing documentation,
-including in particular a complete and searchable function reference. 
-The `examples directory <https://github.com/haribharadwaj/ANLffr/tree/master/examples>`_ 
+The `examples directory <https://github.com/SNAPsoftware/ANLffr/tree/master/examples>`_ 
 contains a sample script that you could modify for your purposes. 
 That would be a good place to get started! 
 See `Bharadwaj & Shinn-Cunningham (2014) <http://www.sciencedirect.com/science/article/pii/S1388245714000443>`_
 for details of the multichannel complex-PCA method. 
-The manuscript is currently in press. 
 For details of the PLV computation and bootstrapping, 
 see `Zhu et al. (2013) <http://www.cns.bu.edu/~shinn/resources/pdfs/2013/2013JASA_Zhu.pdf>`_.
 
