@@ -37,8 +37,8 @@ If you have pip, you may be able to download and install anlffr in one step usin
 
     pip install git+https://github.com/SNAPsoftware/ANLffr.git --user
 
-.. highlights::
-   Note: The GITHUB URL for this package has changed. If you have local copies of the repository with the old URL, please update your rempte bindings::
+.. pull-quote::
+   Note: The GITHUB URL for this package has changed. If you have local copies of the repository with the old URL, please update your remote bindings within git::
 
         git remote set-url origin https://github.com/SNAPsoftware/ANLffr.git
 
