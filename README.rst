@@ -20,7 +20,6 @@ Typical usage would begin with::
     # If using a Biosemi EEG system
     from anlffr.helper import biosemi2mne
 
-
 Get the latest code
 -------------------
 
@@ -37,6 +36,11 @@ of the latest code: https://github.com/SNAPsoftware/ANLffr/archive/master.zip
 If you have pip, you may be able to download and install anlffr in one step using (and hence skip the "Install anlffr" steps below)::
 
     pip install git+https://github.com/SNAPsoftware/ANLffr.git --user
+
+.. highlights::
+   Note: The GITHUB URL for this package has changed. If you have local copies of the repository with the old URL, please update your rempte bindings::
+
+        git remote set-url origin https://github.com/SNAPsoftware/ANLffr.git
 
 Install anlffr
 --------------
