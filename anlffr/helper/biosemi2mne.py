@@ -59,7 +59,7 @@ def importbdf_old(edfname, fiffname, evename, refchans,
 
 @verbose
 def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
-              hptsname=None, mask=-256, extrachans=[], verbose=None):
+              hptsname=None, mask=255, extrachans=[], verbose=None):
     """Wrapper around mne-python to import BDF files
 
     Parameters
@@ -75,7 +75,7 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
     hptsname - Name of the electrode position file in .hpts format with path
                (Optional) By default a 32 channel Biosemi layout is used. If
                the nchans is >= 64, a 64 channel Biosemi layout is used.
-    mask - Integer mask to use for trigger channel (Default is -256).
+    mask - Integer mask to use for trigger channel (Default is 255).
     extrachans - Additional channels other than EEG and EXG that may be in the
                  bdf file. These will be marked as MISC in mne-python.
                  Specify as list of names.
