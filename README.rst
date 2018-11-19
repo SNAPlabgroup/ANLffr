@@ -1,3 +1,6 @@
+.. image:: https://zenodo.org/badge/14990424.svg
+   :target: https://zenodo.org/badge/latestdoi/14990424
+
 ANLffr
 ==========
 
