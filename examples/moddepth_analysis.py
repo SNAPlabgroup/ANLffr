@@ -18,7 +18,7 @@ $ python moddepth_analysis.py dataDir saveDir subject001 [...]
 
 where [...] are inputs for additional subjects.
 
-Last updated: 10/05/2014
+Last updated: 09/10/2015
 Auditory Neuroscience Laboratory, Boston University
 Contact: lennyv@bu.edu
 '''
@@ -29,7 +29,6 @@ import sys
 from scipy import io
 from anlffr import spectral, bootstrap
 from anlffr.utils import logger
-
 
 # prints all info messages from ANLffr to stdout
 logger.setLevel('INFO')
@@ -109,7 +108,7 @@ for s in subjectList:
             # call the bootsrapping function using mtcpca_complete
             # this will handle the data shuffling and making sure that
             # things are sampled evenly from each polarity data set
-            result = bootstrap.bootfunc(spectral._mtcpca_complete,
+            result = bootstrap.bootfunc(spectral.mtcpca_all,
                                         combinedData,
                                         params)
 

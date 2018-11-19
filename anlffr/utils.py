@@ -17,6 +17,11 @@ logger = logging.getLogger('anlffr')  # Used across all code
 logger.propagate = False  # What to do in case of multiple imports
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
 
 # force show of DeprecationWarning even on python 2.7
 warnings.simplefilter('default')
@@ -124,7 +129,12 @@ def verbose(function, *args, **kwargs):
         The decorated function
 
     """
-    arg_names = inspect.getargspec(function).args
+    try: 
+        arg_names = [parameter.name for parameter in
+            inspect.signature(function).parameters.values() if 
+            (parameter.kind == parameter.POSITIONAL_OR_KEYWORD)]
+    except:
+        arg_names = inspect.getargspec(function).args
 
     if len(arg_names) > 0 and arg_names[0] == 'self':
         default_level = getattr(args[0], 'verbose', None)

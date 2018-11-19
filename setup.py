@@ -6,14 +6,15 @@ Created on Thu Oct 10 19:00:08 2013
 @author: hari
 """
 
-from numpy.distutils.core import setup
+from distutils.core import setup
 
 setup(
     name='ANLffr',
-    version='0.1.0beta2',
+    version='0.2.0beta',
     author='Hari Bharadwaj',
     author_email='hari@nmr.mgh.harvard.edu',
     packages=['anlffr', 'anlffr.helper', 'anlffr.externals'],
+    requires=['joblib'],
     package_data={'anlffr.helper': ['sysfiles/*']},
     url='http://github.com/haribharadwaj/ANLffr/',
     license='BSD (3 Clause)',
