@@ -45,11 +45,16 @@ cPCA-based methods implemented in this module first compute the parameter
 of interest on a per-channel basis, then computes the cross-spectral
 densities over channels. We point out that this is different from what a
 strict interpretation of the notation in the equations in [1] suggests.
-Computation of the cross-spectral density on a per-trial basis will
-emphasize features that are phase-locked across channels (e.g., noise). For
-FFRs, the contributions of activity phase locked over channels but not over
-trials will swamp peaks in the resulting output metric, particularly at low
-frequencies.
+In fact, the current cPCA method is equivalent to calculating the
+average of squared single-channel PLV. The mtcplv, mtcpca and mtcspec
+now directly calculate the average of squared PLV/ITC and return it. 
+The cPCA in mtcpca_timeDomain and mtcpca_all was kept,
+but users should be aware that the output will always only include one
+none-zero eigen value and one none-zero eigen vector. The eigen value is
+equivalent to average of squared single-channel PLV/ITC and the eigen
+eigen vector is equivalent to single-channel PLV/ITC normalized to unit
+length. For more details on this issue of [1], please refer to the letter
+to editors on Clin Neurophysiol.
 
 
 References:
@@ -61,7 +66,7 @@ References:
       J Clin Neurophys 125 1878--1898.
       http://dx.doi.org/10.1016/j.clinph.2014.01.011
 
-last updated: 2017-05-16 LV
+last updated: 2020-05-15 HL
 
 @author: Hari Bharadwaj
 
@@ -437,9 +442,7 @@ def mtcpca(x, params, verbose=None):
             C = (xw / abs(xw)).mean(axis=trialdim).squeeze()
 
         for fi in np.arange(0, C.shape[1]):
-            Csd = np.outer(C[:, fi], C[:, fi].conj())
-            vals = linalg.eigh(Csd, eigvals_only=True)
-            plv[k, fi] = vals[-1] / nchans
+            plv[k, fi] = (np.abs(C[:,fi])**2).mean()
 
     # Average over tapers and squeeze to pretty shapes
     plv = (plv.mean(axis=0)).squeeze()
@@ -527,9 +530,7 @@ def mtcspec(x, params, verbose=None):
         xw = np.fft.rfft(tap * x, n=nfft, axis=timedim)
         C = (xw.mean(axis=trialdim)).squeeze()
         for fi in np.arange(0, C.shape[1]):
-            Csd = np.outer(C[:, fi], C[:, fi].conj())
-            vals = linalg.eigh(Csd, eigvals_only=True)
-            cspec[k, fi] = vals[-1] / nchans
+            cspec[k, fi] = (np.abs(C[:,fi])**2).mean()
 
     # Average over tapers and squeeze to pretty shapes
     cspec = (cspec.mean(axis=0)).squeeze()
