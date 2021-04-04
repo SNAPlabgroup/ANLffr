@@ -30,9 +30,9 @@ To get the latest code using git, simply type::
 
     git clone https://github.com/SNAPsoftware/ANLffr.git
 
-To use the pre-release version v0.1.0, type::
+To use a particular realease/pre-release version, say vX.X.Xyz, type::
 
-    git checkout tags/v0.1.0
+    git checkout tags/vX.X.Xy
 
 If you don't have git installed, you can download a zip or tarball
 of the latest code: https://github.com/SNAPsoftware/ANLffr/archive/master.zip
@@ -41,7 +41,7 @@ If you have pip, you may be able to download and install anlffr in one step usin
     pip install git+https://github.com/SNAPsoftware/ANLffr.git --user
 
 .. pull-quote::
-   *Note*: The GITHUB URL for this package has changed. The old URLs will continue to be redirected here. However, if you have local copies of the repository with the old URL, please update your remote bindings within git for easier longterm maintenance::
+   *Note*: The GITHUB URL for this package has changed. The old URLs may temporarily continue to be redirected here. However, if you have local copies of the repository with the old URL, please update your remote bindings within git for easier longterm maintenance::
 
         git remote set-url origin https://github.com/SNAPsoftware/ANLffr.git
 
@@ -62,17 +62,29 @@ when install) use::
 Dependencies
 ------------
 
-Packages NumPy >= 1.4, SciPy >= 0.7.2 are required for the code in the spectral.py module to work. `MNE-python <http://github.com/mne-tools/mne-python>`_ >= 0.7 is required for the modules in the anlffr.helper package (For importing Biosemi BDF files and preprocessing).
+The minimum required dependencies to run ANLffr are:
+
+- Python >= 3.6
+- NumPy >= 1.15.4
+- SciPy >= 1.1.0
+
+For full functionality, some functions (e.g., modules in the anlffr.helper package) require:
+
+- Matplotlib >= 3.0.3
+- MNE-Python >= 0.21
+
 
 Getting Started
 ---------------
 The `examples directory <https://github.com/SNAPsoftware/ANLffr/tree/master/examples>`_ 
 contains a sample script that you could modify for your purposes. 
 That would be a good place to get started! 
-See `Bharadwaj & Shinn-Cunningham (2014) <http://www.sciencedirect.com/science/article/pii/S1388245714000443>`_
+See `Bharadwaj & Shinn-Cunningham (2014) <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4633012/>`_
 for details of the multichannel complex-PCA method. 
+However, note that critical issues in Bharadwaj & Shinn-Cunningham (2014) were found and
+described in `Lu et al., 2020 <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7860925/>`_.
 For details of the PLV computation and bootstrapping, 
-see `Zhu et al. (2013) <http://www.cns.bu.edu/~shinn/resources/pdfs/2013/2013JASA_Zhu.pdf>`_.
+see `Zhu et al., (2013) <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3724813/>`_.
 
 Briefly, consider the following example::
 
@@ -122,7 +134,7 @@ ANLffr is **BSD-licenced** (3 clause):
     This software is OSI Certified Open Source Software.
     OSI Certified is a certification mark of the Open Source Initiative.
 
-    Copyright (c) 2013, authors of ANLffr.
+    Copyright (c) 2013-2021, authors of ANLffr.
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
