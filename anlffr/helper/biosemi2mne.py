@@ -1,66 +1,15 @@
-from subprocess import call
-import mne
-import numpy as np
 import os
 import sys
 from mne import find_events
-from mne.io import edf, set_eeg_reference, make_eeg_average_ref_proj
-from mne.channels import read_montage
-from ..utils import logger, deprecated, verbose
-
-
-@deprecated('May fail depending on MNE version! Use importbdf(.) instead.')
-def importbdf_old(edfname, fiffname, evename, refchans,
-                  hptsname=None, aliasname=None):
-    """ Wrapper around MNE to import Biosemi BDF files
-
-    Parameters
-    ----------
-    edfname - Name of the biosemi .bdf file with full path
-    fiffname - Name of fiff file to be generated with full path
-    hptsname - Name of electrode position file in .hpts formal (with path)
-    aliasname - Alias .txt file to assign electrode types and names correctly
-    evename - Name of event file to be written by reading the 'Status' channel
-    refchans - Reference channel(s) for rereferencing e.g. [32, 33]
-
-    Returns
-    -------
-    raw - MNE raw object of rereferenced and preloaded data
-    eve - Event list (3 column array as required by mne.Epochs)
-
-    Requires
-    --------
-    MNE commandline tools should be in the path of current shell.
-    See the MNE manual for information about the alias and hpts files.
-
-    """
-
-    # What happens if they don't specify a hpts/alias file: Use default
-    if(hptsname is None):
-        anlffr_root = os.path.dirname(sys.modules['anlffr'].__file__)
-        hptsname = os.path.join(anlffr_root, 'helper/sysfiles/biosemi32.hpts')
-
-    if(aliasname is None):
-        anlffr_root = os.path.dirname(sys.modules['anlffr'].__file__)
-        aliasname = os.path.join(anlffr_root,
-                                 'helper/sysfiles/biosemi32alias.txt')
-
-    call(["mne_edf2fiff", "--edf", edfname, "--fif", fiffname,
-         "--hpts", hptsname])
-    call(["mne_rename_channels", "--fif", fiffname, "--alias", aliasname])
-    call(["mne_process_raw", "--raw", fiffname, "--digtrig", "Status",
-          "--digtrigmask", "0xff", "--eventsout", evename])
-    raw = mne.fiff.Raw(fiffname, preload=True)
-    ref = np.mean(raw._data[refchans, :], axis=0)
-    raw._data = raw._data - ref
-    eves = mne.read_events(evename)
-    return (raw, eves)
+from mne.io import read_raw_bdf, set_eeg_reference, make_eeg_average_ref_proj
+from mne.channels import read_dig_hpts
+from ..utils import logger, verbose
 
 
 @verbose
 def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
               hptsname=None, mask=255, extrachans=[],
-              exclude=None, verbose=None):
+              exclude=[], verbose=None):
     """Wrapper around mne-python to import BDF files
 
     Parameters
@@ -83,7 +32,7 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
     extrachans - Additional channels other than EEG and EXG that may be in the
                  bdf file. These will be marked as MISC in mne-python.
                  Specify as list of names.
-    excllude - List of channel names to exclude from importing
+    exclude - List of channel names to exclude from importing
     verbose - bool, str, int, or None (Optional)
         The verbosity of messages to print. If a str, it can be either DEBUG,
         INFO, WARNING, ERROR, or CRITICAL.
@@ -106,36 +55,37 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
             logger.info('Number of channels is greater than 64.'
                         ' Hence loading a 64 channel montage.')
             hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
-            hptsname = 'biosemi64'
-            montage = read_montage(kind=hptsname, path=hptspath,
-                                   transform=True)
+            hptsname = 'biosemi64.hpts'
+            montage = read_dig_hpts(hptspath + hptsname)
             misc = ['EXG3', 'EXG4', 'EXG5', 'EXG6', 'EXG7', 'EXG8']
         else:
             if nchans >= 96:
                 logger.info('Number of channels is greater than 96.'
                             ' Hence loading a 96 channel montage.')
                 hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
-                hptsname = 'biosemi96'
-                montage = read_montage(kind=hptsname, path=hptspath,
-                                       transform=True)
+                hptsname = 'biosemi96.hpts'
+                montage = read_dig_hpts(hptspath + hptsname)
                 misc = ['EXG3', 'EXG4', 'EXG5', 'EXG6', 'EXG7', 'EXG8']
             else:
                 if nchans == 2:
                     logger.info('Number of channels is 2.'
-                                'Guessing ABR montage.')
+                                'Guessing ABR montage or saccades.')
                     montage = None
                     misc = []
                 else:
                     logger.info('Loading a default 32 channel montage.')
                     hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
-                    hptsname = 'biosemi32'
-                    montage = read_montage(kind=hptsname, path=hptspath,
-                                           transform=True)
+                    hptsname = 'biosemi32.hpts'
+                    montage = read_dig_hpts(hptspath + hptsname)
                     misc = ['EXG3', 'EXG4', 'EXG5', 'EXG6', 'EXG7', 'EXG8']
+    else:
+        montage = read_dig_hpts(hptsname)  # User-supplied
+        misc = ['EXG3', 'EXG4', 'EXG5', 'EXG6', 'EXG7', 'EXG8']
 
     misc += extrachans
-    raw = edf.read_raw_edf(bdfname, montage=montage, preload=True,
-                           misc=misc, exclude=exclude, stim_channel='Status')
+    raw = read_raw_bdf(bdfname, preload=True, misc=misc, exclude=exclude,
+                       stim_channel='auto')
+    raw.set_montage(montage, on_missing='warn')
 
     # Rereference
     if refchans is not None:

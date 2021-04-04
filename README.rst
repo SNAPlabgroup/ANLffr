@@ -5,8 +5,7 @@
 ANLffr
 ==========
 
-From the `Auditory Neuroscience Lab at Boston University <http://www.cns.bu.edu/~shinn/ANL/index.html>`_,
-and the `Systems Neuroscience of Auditory Perception lab at Purdue University <https://engineering.purdue.edu/SNAPLab>`_,
+From the `Systems Neuroscience of Auditory Perception lab at Purdue University <https://engineering.purdue.edu/SNAPLab>`_,
 a set of tools to analyze and interpret auditory steady-state responses, 
 particularly the subcortical kind commonly known as frequency-following responses (FFRs). 
 In particular, the package provides code for multitaper-analysis of spectra and phase locking 

@@ -6,18 +6,22 @@ Created on Thu Oct 10 19:00:08 2013
 @author: hari
 """
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
     name='ANLffr',
-    version='0.2.0beta',
+    version='0.3.0a1',
     author='Hari Bharadwaj',
-    author_email='hari@nmr.mgh.harvard.edu',
-    packages=['anlffr', 'anlffr.helper', 'anlffr.externals'],
+    author_email='hari.bharadwaj@gmail.com',
+    packages=find_packages(include=['anlffr', 'anlffr.*']),
+    python_requires='>=3',
     requires=['joblib'],
     package_data={'anlffr.helper': ['sysfiles/*']},
-    url='http://github.com/haribharadwaj/ANLffr/',
+    url='https://github.com/SNAPsoftware/ANLffr',
     license='BSD (3 Clause)',
-    description='Auditory Neuroscience Lab (ANL) at Boston University',
+    description=('Useful functions for processing and analysis of'
+                 'mass-potentials and other electrophysiological data from'
+                 'SNAPlab at Purdue University. Provides frequency, and'
+                 'time-frequency analysis capabilities'),
     long_description=open('README.rst').read(),
 )
