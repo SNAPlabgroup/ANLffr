@@ -14,7 +14,7 @@ from mne.filter import filter_data
 
 @verbose
 def find_blinks(raw, event_id=998, thresh=100e-6, l_freq=0.5, h_freq=10,
-                filter_length='10s', ch_name=['A1', ], tstart=0.,
+                filter_length='auto', ch_name=['A1', ], tstart=0.,
                 l_trans_bandwidth=0.15):
 
     """Utility function to detect blink events from specified channel.
