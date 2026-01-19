@@ -1,7 +1,7 @@
 import os
 import sys
 from mne import find_events
-from mne.io import read_raw_bdf, set_eeg_reference, make_eeg_average_ref_proj
+from mne.io import read_raw_bdf
 from mne.channels import read_dig_hpts
 from ..utils import logger, verbose
 
@@ -75,7 +75,7 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
                 else:
                     logger.info('Loading a default 32 channel montage.')
                     hptspath = os.path.join(anlffr_root, 'helper/sysfiles/')
-                    hptsname = 'biosemi32.hpts'
+                    hptsname = 'biosemi10_20.hpts'
                     montage = read_dig_hpts(hptspath + hptsname)
                     misc = ['EXG3', 'EXG4', 'EXG5', 'EXG6', 'EXG7', 'EXG8']
     else:
@@ -90,12 +90,11 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
     # Rereference
     if refchans is not None:
         sys.stdout.write('Re-referencing data to: ' + ' '.join(refchans))
-        (raw, ref_data) = set_eeg_reference(raw, refchans, copy=False)
+        raw.set_eeg_reference(ref_channels=refchans, copy=False)
         raw.info['bads'] += refchans
     else:
         # Add average reference operator for possible use later
-        ave_ref_operator = make_eeg_average_ref_proj(raw.info, activate=False)
-        raw = raw.add_proj(ave_ref_operator)
+        raw.set_eeg_reference(ref_channels='average', copy=False)
 
     eves = find_events(raw, shortest_event=1, mask=mask)
 
