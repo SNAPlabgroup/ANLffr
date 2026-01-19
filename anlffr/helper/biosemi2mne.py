@@ -90,11 +90,11 @@ def importbdf(bdfname, nchans=34, refchans=['EXG1', 'EXG2'],
     # Rereference
     if refchans is not None:
         sys.stdout.write('Re-referencing data to: ' + ' '.join(refchans))
-        raw.set_eeg_reference(ref_channels=refchans, copy=False)
+        raw.set_eeg_reference(ref_channels=refchans)
         raw.info['bads'] += refchans
     else:
         # Add average reference operator for possible use later
-        raw.set_eeg_reference(ref_channels='average', copy=False)
+        raw.set_eeg_reference(ref_channels='average')
 
     eves = find_events(raw, shortest_event=1, mask=mask)
 
